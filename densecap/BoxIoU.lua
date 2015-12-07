@@ -1,5 +1,5 @@
 require 'nn'
-local box_utils = require 'box_utils'
+local box_utils = require 'densecap.box_utils'
 local layer, parent = torch.class('nn.BoxIoU', 'nn.Module')
 
 

@@ -1,9 +1,9 @@
 require 'nn'
 require 'stn'
 
-require 'BoxToAffine'
-require 'BatchBilinearSamplerBHWD'
-require 'NaiveBatchBilinearSamplerBHWD'
+require 'densecap.BoxToAffine'
+require 'densecap.BatchBilinearSamplerBHWD'
+require 'densecap.NaiveBatchBilinearSamplerBHWD'
 
 
 local layer, parent = torch.class('nn.BilinearRoiPooling', 'nn.Module')

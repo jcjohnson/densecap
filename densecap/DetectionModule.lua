@@ -1,18 +1,18 @@
 require 'torch'
 require 'nn'
 
-require 'ApplyBoxTransform'
-require 'BoxSamplerHelper'
-require 'BilinearRoiPooling'
-require 'InvertBoxTransform'
-require 'MakeAnchors'
-require 'OurCrossEntropyCriterion'
-require 'ReshapeBoxFeatures'
-require 'RegularizeLayer'
+require 'densecap.ApplyBoxTransform'
+require 'densecap.BoxSamplerHelper'
+require 'densecap.BilinearRoiPooling'
+require 'densecap.InvertBoxTransform'
+require 'densecap.MakeAnchors'
+require 'densecap.OurCrossEntropyCriterion'
+require 'densecap.ReshapeBoxFeatures'
+require 'densecap.RegularizeLayer'
 
 -- local net_utils = require 'net_utils'
-local box_utils = require 'box_utils'
-local utils = require 'utils'
+local box_utils = require 'densecap.box_utils'
+local utils = require 'densecap.utils'
 
 
 --------------------------------------------------------------------------------
@@ -80,11 +80,10 @@ function layer:__init(opt)
   opt.sampler_low_thresh = utils.getopt(opt, 'sampler_low_thresh', 0.5)
   opt.train_remove_outbounds_boxes = utils.getopt(opt, 'train_remove_outbounds_boxes', 1)
 
-  opt.box_reg_weight = utils.getopt(opt, 'box_reg_weight', 20)
-  opt.obj_weight = utils.getopt(opt, 'objectness_weight', 1)
+  utils.ensureopt(opt, 'mid_box_reg_weight')
+  utils.ensureopt(opt, 'mid_objectness_weight')
+  
   opt.box_reg_decay = utils.getopt(opt, 'box_reg_decay', 0)
-  opt.box_reg_grad_mul = utils.getopt(opt, 'box_reg_grad_mul', 1)
-  opt.stn_grad_mul = utils.getopt(opt, 'stn_grad_mul', 1)
   self.opt = opt
 
   self.losses = {}
@@ -403,8 +402,9 @@ function layer:updateOutput(input)
     self.neg_labels:resize(num_neg):fill(2)
     local obj_loss_pos = self.nets.obj_crit_pos:forward(self.pos_scores, self.pos_labels)
     local obj_loss_neg = self.nets.obj_crit_neg:forward(self.neg_scores, self.neg_labels)
-    self.stats.losses.obj_loss_pos = self.opt.obj_weight * obj_loss_pos
-    self.stats.losses.obj_loss_neg = self.opt.obj_weight * obj_loss_neg
+    local obj_weight = self.opt.mid_objectness_weight
+    self.stats.losses.obj_loss_pos = obj_weight * obj_loss_pos
+    self.stats.losses.obj_loss_neg = obj_weight * obj_loss_neg
   end)
       
   -- Compute targets for RPN bounding box regression
@@ -416,7 +416,7 @@ function layer:updateOutput(input)
   -- Compute RPN box regression loss
   self:timeit('box_reg_loss:forward', function()
     local crit = self.nets.box_reg_crit
-    local weight = self.opt.box_reg_weight
+    local weight = self.opt.mid_box_reg_weight
     local loss = weight * crit:forward(self.pos_trans, self.pos_trans_targets)
     self.stats.losses.box_reg_loss = loss
   end)
@@ -474,7 +474,7 @@ function layer:updateGradInput(input, gradOutput)
   local grad_pos_trans
   self:timeit('box_reg_loss:backward', function()
     local crit = self.nets.box_reg_crit
-    local weight = self.opt.box_reg_weight
+    local weight = self.opt.mid_box_reg_weight
     grad_pos_trans = crit:backward(self.pos_trans, self.pos_trans_targets)
     -- Note that this is a little weird - it modifies a modules gradInput
     -- in-place, which could cause trouble if this gradient is reused.
@@ -488,8 +488,8 @@ function layer:updateGradInput(input, gradOutput)
     --print('backward: ', self.neg_labels:nElement(), self.neg_labels:sum(), self.neg_scores:sum())
     grad_neg_scores = self.nets.obj_crit_neg:backward(self.neg_scores, self.neg_labels)
     -- Same problem as above - modifying gradients in-place may be dangerous
-    grad_pos_scores:mul(self.opt.obj_weight)
-    grad_neg_scores:mul(self.opt.obj_weight)
+    grad_pos_scores:mul(self.opt.mid_objectness_weight)
+    grad_neg_scores:mul(self.opt.mid_objectness_weight)
   end)
   
   -- Backprop RoI pooling
@@ -498,7 +498,7 @@ function layer:updateGradInput(input, gradOutput)
     local din = self.nets.roi_pooling:backward(
                     {cnn_features[1], self.roi_boxes},
                     grad_roi_features)
-    grad_roi_boxes:add(self.opt.stn_grad_mul, din[2])
+    grad_roi_boxes:add(din[2])
     grad_cnn_features:add(din[1]:viewAs(cnn_features))
   end)
 
@@ -582,7 +582,7 @@ function build_rpn(opt)
   end
   box_conv_layer.bias:zero()
   box_branch:add(box_conv_layer)
-  box_branch:add(nn.RegularizeLayer(opt.box_reg_decay, opt.box_reg_grad_mul))
+  box_branch:add(nn.RegularizeLayer(opt.box_reg_decay))
   local x0, y0, sx, sy = unpack(opt.field_centers)
   local seq = nn.Sequential()
   seq:add(nn.MakeAnchors(x0, y0, sx, sy, anchors))

@@ -1,6 +1,6 @@
-require 'BoxIoU'
-local box_utils = require 'box_utils'
-local utils = require 'utils'
+require 'densecap.BoxIoU'
+local box_utils = require 'densecap.box_utils'
+local utils = require 'densecap.utils'
 
 local BoxSampler, parent = torch.class('nn.BoxSampler', 'nn.Module')
 

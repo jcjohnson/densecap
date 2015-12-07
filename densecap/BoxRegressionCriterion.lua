@@ -1,6 +1,6 @@
 require 'nn'
-require 'ApplyBoxTransform'
-require 'InvertBoxTransform'
+require 'densecap.ApplyBoxTransform'
+require 'densecap.InvertBoxTransform'
 
 local crit, parent = torch.class('nn.BoxRegressionCriterion', 'nn.Criterion')
 
