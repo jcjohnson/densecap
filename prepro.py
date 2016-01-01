@@ -396,11 +396,11 @@ def main(args):
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   # INPUT settings
-  parser.add_argument('--json_input', default='data/VG-regions-small.txt', help='input text file with json blobs 1 per line')
+  parser.add_argument('--json_input', default='data/VG-regions.txt', help='input text file with json blobs 1 per line')
   parser.add_argument('--image_dir', default='data/VG-100k', help='directory path, will be preprended to all image paths')
   # OUTPUT settings
-  parser.add_argument('--json_file', default='data/VG-regions-dicts-small.json', help='output json file path')
-  parser.add_argument('--h5_file', default='data/VG-regions-small.h5', help='output hdf5 file path')
+  parser.add_argument('--json_file', default='data/VG-regions-dicts.json', help='output json file path')
+  parser.add_argument('--h5_file', default='data/VG-regions.h5', help='output hdf5 file path')
   # OPTIONS
   parser.add_argument('--image_size', default=512, type=int, help='size of longest edge of preprocessed images')  
   parser.add_argument('--max_token_length', default=25, type=int, help="set to 0 to disable filtering")

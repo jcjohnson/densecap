@@ -6,7 +6,6 @@ local DataLoader = torch.class('DataLoader')
 
 function DataLoader:__init(opt)
   self.h5_read_all = utils.getopt(opt, 'h5_read_all', false) -- read everything in memory once?
-  self.use_split_indicator = utils.getopt(opt, 'use_split_indicator', true)
   self.debug_max_train_images = utils.getopt(opt, 'debug_max_train_images', -1)
   self.proposal_regions_h5 = utils.getopt(opt, 'proposal_regions_h5', '')
   assert(opt.h5_file ~= nil, 'DataLoader input error: must provide h5_file')
@@ -31,18 +30,17 @@ function DataLoader:__init(opt)
   table.insert(keys, 'lengths')
   table.insert(keys, 'original_heights')
   table.insert(keys, 'original_widths')
-  if self.use_split_indicator then
-    table.insert(keys, 'split')
-  end
+  table.insert(keys, 'split')
   if self.h5_read_all then
-    table.insert(keys, 'images') -- TODO remote and do partial reads instead inside getBatch
+    table.insert(keys, 'images')
   end
   for k,v in pairs(keys) do
     print('reading ' .. v)
     self[v] = self.h5_file:read('/' .. v):all()
   end
 
-  -- open region proposals file for reading
+  -- open region proposals file for reading. This is useful if we, e.g.
+  -- want to use the ground truth boxes, or if we want to use external region proposals
   if string.len(self.proposal_regions_h5) > 0 then
     print('DataLoader loading objectness boxes from h5 file: ', opt.proposal_regions_h5)
     self.obj_boxes_file = hdf5.open(opt.proposal_regions_h5, 'r')
@@ -73,30 +71,14 @@ function DataLoader:__init(opt)
   self.train_ix = {}
   self.val_ix = {}
   self.test_ix = {}
-  if self.use_split_indicator then
-    print('using the split indicator array to compute the data splits.')
-    for i=1,self.num_images do
-      if self.split[i] == 0 then table.insert(self.train_ix, i) end
-      if self.split[i] == 1 then table.insert(self.val_ix, i) end
-      if self.split[i] == 2 then table.insert(self.test_ix, i) end
-    end
-  else
-    print('setting splits according to train_frac/val_frac')
-    local split_fractions = {opt.train_frac, opt.val_frac, 1.0 - opt.train_frac - opt.val_frac}
-    local b1 = math.ceil(self.num_images * split_fractions[1])
-    local b2 = math.ceil(self.num_images * (split_fractions[1] + split_fractions[2]))
-    for i=1,self.num_images do
-      if i <= b1 then 
-        table.insert(self.train_ix, i)
-      elseif i <= b2 then
-        table.insert(self.val_ix, i)
-      else
-        table.insert(self.test_ix, i)
-      end
-    end
+  for i=1,self.num_images do
+    if self.split[i] == 0 then table.insert(self.train_ix, i) end
+    if self.split[i] == 1 then table.insert(self.val_ix, i) end
+    if self.split[i] == 2 then table.insert(self.test_ix, i) end
   end
+
   self.iterators = {[0]=1,[1]=1,[2]=1} -- iterators (indices to split lists) for train/val/test
-  print(string.format('assigned %d/%d/%d to train/val/test.', #self.train_ix, #self.val_ix, #self.test_ix))
+  print(string.format('assigned %d/%d/%d images to train/val/test.', #self.train_ix, #self.val_ix, #self.test_ix))
 
   print('initialized DataLoader:')
   print(string.format('#images: %d, #regions: %d, sequence max length: %d', 
@@ -193,6 +175,7 @@ function DataLoader:getBatch(opt)
   if self.h5_read_all then
     img = self.images[{{ix,ix}}] -- read from RAM
   else
+    -- otherwise do a partial read from h5 file (might be slower)
     img = self.h5_file:read('/images'):partial({ix,ix},{1,self.num_channels},
                             {1,self.max_image_size},{1,self.max_image_size})
   end

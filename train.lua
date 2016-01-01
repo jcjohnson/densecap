@@ -1,6 +1,6 @@
 
 --[[
-Train a Dense Labeler
+Main script for training a DenseCap model.
 ]]--
 
 -------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ local utils = require 'densecap.utils'
 -------------------------------------------------------------------------------
 cmd = torch.CmdLine()
 cmd:text()
-cmd:text('Train a Dense Labeler')
+cmd:text('Train a DenseCap model.')
 cmd:text()
 cmd:text('Options')
 
@@ -54,71 +54,55 @@ cmd:option('-backend', 'cudnn', 'nn|cudnn')
 cmd:option('-rpn_hidden_dim',512,'hidden size in the rpnnet')
 cmd:option('-sampler_batch_size',256,'batch size to use in the box sampler')
 cmd:option('-rnn_size',512,'size of the rnn in number of hidden nodes in each layer')
-cmd:option('-input_encoding_size',512,'only used in captioning: what is the encoding size of each token in the vocabulary? (chars or words)')
+cmd:option('-input_encoding_size',512,'what is the encoding size of each token in the vocabulary? (chars or words)')
+cmd:option('-sampler_high_thresh', 0.7, 'predicted boxes with IoU more than this with a positive box are considered as positive')
+cmd:option('-sampler_low_thresh', 0.3, 'predicted boxes with IoU less than this with a positive box are considered as negative')
+cmd:option('-train_remove_outbounds_boxes', 1,' Whether to ignore out-of-bounds boxes for sampling at training time')
 
--- Loss function
+-- Loss function weights
 cmd:option('-mid_box_reg_weight',0.05,'what importance to assign to regressing bounding boxes well in rpn?')
 cmd:option('-mid_objectness_weight', 0.1, 'what importance to assign to pos/neg objectness labels?')
 cmd:option('-end_box_reg_weight', 0.1, 'what importance to assign to final class-specific bounding box regression?')
 cmd:option('-end_objectness_weight',0.1,'what importance to assign to classifying the correct class?')
 cmd:option('-captioning_weight',1.0,'what importance to assign to captioning, if present?')
 cmd:option('-weight_decay', 1e-6, 'L2 weight decay penalty strength')
-cmd:option('-box_reg_decay', 5e-5, 'Strength of pull for boxes towards their anchor')
+cmd:option('-box_reg_decay', 5e-5, 'Strength of a pull that boxes experience towards their anchor, to prevent wild drifts')
 
 -- Data input settings
-cmd:option('-train_data_h5','data/vg-regions-720.h5','path to the h5file containing the preprocessed dataset')
-cmd:option('-train_data_json','data/vg-regions-720-dicts.json','path to the json file containing additional info')
-cmd:option('-train_frac',0.9,'fraction of data that goes into train set')
-cmd:option('-val_frac',0.1,'fraction of data that goes into validation set')
-cmd:option('-h5_read_all',false,'read the whole h5 dataset to memory?')
-cmd:option('-debug_max_train_images', -1, 'useful for debugging: Cap #train images at this value to check that we can overfit. (-1 = disable)')
+cmd:option('-train_data_h5','data/VG-regions.h5','path to the h5file containing the preprocessed dataset (made in prepro.py)')
+cmd:option('-train_data_json','data/VG-regions-dicts.json','path to the json file containing additional info (made in prepro.py)')
+cmd:option('-h5_read_all',false,'read the whole h5 dataset to memory? COCO images take several tens of GB might not fit in your RAM, need partial reading.')
 cmd:option('-proposal_regions_h5','','override RPN boxes with boxes from this h5 file (empty = don\'t override)')
+cmd:option('-debug_max_train_images', -1, 'for debugging: Cap #train images at this value to check that we can overfit. (-1 = disable)')
 
 -- Optimization
-cmd:option('-optim','rmsprop','what update to use? rmsprop|sgd|sgdmom')
-cmd:option('-cnn_optim', 'sgd', 'what update to use for CNN?')
-cmd:option('-learning_rate',4e-6,'learning rate for rmsprop')
-cmd:option('-optim_alpha',0.9,'alpha for rmsprop/adam/momentum')
-cmd:option('-optim_beta',0.999,'for adam')
-cmd:option('-optim_epsilon',1e-8,'epsilon that goes into denominator in rmsprop')
-cmd:option('-finetune_cnn_after', -1, 'After what iteration do we start finetuning the CNN? (-1 = disable; never finetune, 0 = finetune from start)')
-cmd:option('-checkpoint_path', 'checkpoint.t7', 'the name of the checkpoint file to use')
+cmd:option('-learning_rate',4e-6,'learning rate to use')
+cmd:option('-optim_beta1',0.9,'beta1 for adam')
+cmd:option('-optim_beta2',0.999,'beta2 for adam')
+cmd:option('-optim_epsilon',1e-8,'epsilon for smoothing')
+cmd:option('-drop_prob', 0.5, 'Dropout strength throughout the model.')
 cmd:option('-max_iters', -1, 'max number of iterations to run for (-1 = run forever)')
-cmd:option('-save_checkpoint_every', 1000, 'how often to save a model checkpoint?')
+cmd:option('-checkpoint_start_from', '', 'load model from a given checkpoint instead of random initialization.')
+cmd:option('-finetune_cnn_after', -1, 'After what iteration do we start finetuning the CNN? (-1 = disable; never finetune, 0 = finetune from start)')
 cmd:option('-val_images_use', 100, 'how many images to use when periodically evaluating the validation loss? (-1 = all)')
-cmd:option('-matlab_eval_too', false, 'During validation VOC run, crease matlab evaluation intermediate files? (only used in checking our lua/torch correctness)')
-cmd:option('-checkpoint_start_from', '')
-cmd:option('-cnn_learning_rate',1e-4,'learning rate for the CNN')
-cmd:option('-cnn_optim_alpha',0,'alpha for rmsprop/momentum for sgdmom of cnn')
-cmd:option('-cnn_optim_beta', 0, 'beta for adam of cnn')
 
-cmd:option('-train_iter_init',-1,'override dataloader iterator to this value (careful use!)')
-
-cmd:option('-recog_dropout', 0.5, 'Probability of dropping a unit')
+-- Model checkpointing
+cmd:option('-save_checkpoint_every', 1000, 'how often to save a model checkpoint?')
+cmd:option('-checkpoint_path', 'checkpoint.t7', 'the name of the checkpoint file to use')
 
 -- Visualization
 cmd:option('-progress_dump_every', 100, 'Every how many iterations do we write a progress report to vis/out ?. 0 = disable.')
 cmd:option('-losses_log_every', 10, 'How often do we save losses, for inclusion in the progress dump? (0 = disable)')
 
--- Training-time box sampling options
-cmd:option('-sampler_high_thresh', 0.3)
-cmd:option('-sampler_low_thresh', 0.7)
-cmd:option('-train_remove_outbounds_boxes', 1,' Whether to ignore out-of-bounds boxes for sampling at training time')
-
 -- misc
-cmd:option('-id', '', 'an id identifying this run/job. used in cross-val and appended when writing progress files')
+cmd:option('-id', '', 'an id identifying this run/job. can be used in cross-validation.')
 cmd:option('-seed', 123, 'random number generator seed to use')
 cmd:option('-gpuid', 0, 'which gpu to use. -1 = use CPU')
 cmd:option('-timing', false, 'whether to time parts of the net')
 cmd:option('-dump_all_losses', 0)
 cmd:option('-clip_final_boxes', 1,
            'whether to clip final boxes to image boundary; probably set to 0 for dense captioning')
-cmd:option('-eval_objectness', 0, 'if true, evalute mAP for objectness rather than final detection')
 cmd:option('-eval_first_iteration',0,'evaluate on first iteration? 1 = do, 0 = dont.')
-cmd:option('-eval_outputs', 1)
-cmd:option('-use_random_region_proposals', 0)
-
-cmd:option('-cv_min_map', -1, 'if the map is lower than this during eval, the job will be killed as not going well (-1 = disable)')
 
 cmd:text()
 
@@ -134,42 +118,17 @@ cutorch.setDevice(opt.gpuid + 1) -- note +1 because lua is 1-indexed
 local dataOpt = {}
 dataOpt.h5_file = opt.train_data_h5
 dataOpt.json_file = opt.train_data_json
-dataOpt.train_frac = opt.train_frac
-dataOpt.val_frac = opt.val_frac
 dataOpt.h5_read_all = opt.h5_read_all
 dataOpt.debug_max_train_images = opt.debug_max_train_images
 dataOpt.proposal_regions_h5 = opt.proposal_regions_h5
 local loader = DataLoader(dataOpt)
 local seq_length = loader:getSeqLength()
-local sequence_prediction = seq_length > 1 -- we will use rnn when predicting sequences
 local max_image_size = loader:getImageMaxSize()
 local vocab_size = loader:getVocabSize()
 
-if opt.train_iter_init > 0 then
-  loader.iterators[0] = opt.train_iter_init
-  print('setting train iterator to ' .. opt.train_iter_init)
-end
-
 local model
 if opt.checkpoint_start_from == '' then
-  --[[
-  model = StnDetectionModel{
-          backend=opt.backend,
-          vocab_size=vocab_size,
-          sampler_batch_size=opt.sampler_batch_size,
-          objectness_weight=opt.objectness_weight,
-          box_reg_weight=opt.box_reg_weight,
-          final_box_reg_weight=opt.final_box_reg_weight,
-          classification_weight=opt.classification_weight,
-          box_reg_decay=opt.box_reg_decay,
-          sampler_high_thresh=opt.iou_high_thresh,
-          sampler_low_thresh=opt.iou_low_thresh,
-          train_remove_outbounds_boxes=opt.train_remove_outbounds_boxes,
-          seq_length = seq_length,
-          captioning_weight = opt.captioning_weight,
-        }
-  --]]
-  opt.vocab_size = vocab_size
+  opt.vocab_size = vocab_size -- hmm, not very pretty...
   opt.seq_length = seq_length
   model = DenseCapModel(opt, loader.info.idx_to_token)
 else
@@ -189,10 +148,10 @@ else
   model.opt.captioning_weight = opt.captioning_weight
 end
 
--- In either case set find Dropout modules and set their probabilities
+-- Find all Dropout layers and set their probabilities according to provided option
 local dropout_modules = model.nets.recog_base:findModules('nn.Dropout')
 for i, dropout_module in ipairs(dropout_modules) do
-  dropout_module.p = opt.recog_dropout
+  dropout_module.p = opt.drop_prob
 end
 
 -- get the parameters vector
@@ -218,7 +177,6 @@ local loss_history = {}
 local all_losses = {}
 local results_history = {}
 local iter = 0
-local diediedie = false
 local function lossFun()
   grad_params:zero()
   if opt.finetune_cnn_after ~= -1 and iter > opt.finetune_cnn_after then
@@ -231,14 +189,6 @@ local function lossFun()
   local info
   local data = {}
   data.images, data.target_boxes, data.target_seqs, info, data.region_proposals = loader:getBatch()
-
-  if opt.use_random_region_proposals == 1 then
-    data.region_proposals = torch.randn(1, 10000, 5)
-    data.region_proposals[{{}, {}, 1}]:mul(150):add(data.images:size(4) / 2):clamp(50, data.images:size(4) - 50)
-    data.region_proposals[{{}, {}, 2}]:mul(150):add(data.images:size(3) / 2):clamp(50, data.images:size(3) - 50)
-    data.region_proposals[{{}, {}, 3}]:mul(50):add(150):abs()
-    data.region_proposals[{{}, {}, 4}]:mul(50):add(150):abs()
-  end
   if opt.timing then cutorch.synchronize() end
   local getBatch_time = timer:time().real
 
@@ -315,30 +265,13 @@ local function eval_split(split, max_images)
 
   -- TODO: we're about to reset the iterator, which means that for training data
   -- we would lose our place in the dataset as we're iterating around. 
-  -- This only comes up if we ever wanted mAP on training data. Worry about later.
-  assert(split == 1, 'train evaluation is tricky for now. Also test evaluation (split=2) is naughty. todo.')
-
-  -- instantiate the evaluators
-  local evaluator, evaluatorMatlab
-  if not sequence_prediction then
-    evaluator = VOCEvaluator(loader:getVocab(), {id = opt.id}) -- id will be appended to filenames
-    if opt.matlab_eval_too then
-      evaluatorMatlab = VOCEvaluatorMatlab(loader:getVocab(), { id = opt.id }) -- id will be appended to filenames
-    end
-  else
-    evaluator = DenseCaptionEvaluator({id = opt.id})
-  end
-  if opt.eval_outputs == 0 then
-    evaluator = nil
-    evaluatorMatlab = nil
-  end
-
-  local objectness_stats = nil
-  if opt.eval_objectness == 1 then
-    objectness_stats = {}
-  end
-
+  -- This only comes up if we ever wanted to eval over training data. Worry about later.
+  assert(split == 1, 'train evaluation is tricky for now. todo.')
   loader:resetIterator(split)
+
+  -- instantiate an evaluator class
+  local evaluator = DenseCaptionEvaluator({id = opt.id})
+
   local counter = 0
   local all_losses = {}
   while true do
@@ -353,43 +286,19 @@ local function eval_split(split, max_images)
     model.timing = false
     model.dump_vars = false
     model.cnn_backward = false
-
-    if opt.use_random_region_proposals == 1 then
-      data.region_proposals = torch.randn(1, 10000, 5)
-      data.region_proposals[{{}, {}, 1}]:mul(150):add(data.images:size(4) / 2):clamp(50, data.images:size(4) - 50)
-      data.region_proposals[{{}, {}, 2}]:mul(150):add(data.images:size(3) / 2):clamp(50, data.images:size(3) - 50)
-      data.region_proposals[{{}, {}, 3}]:mul(50):add(150):abs()
-      data.region_proposals[{{}, {}, 4}]:mul(50):add(150):abs()
-    end
     local losses, stats = model:forward_backward(data)
     table.insert(all_losses, losses)
 
     -- if we are doing object detection also forward the model in test mode to get predictions and do mAP eval
     local boxes, logprobs, seq
-    if opt.eval_objectness == 1 then
-      local obj_stats = box_utils.eval_box_recall(model.rpn_boxes, data.target_boxes[1])
-      table.insert(objectness_stats, obj_stats)
-    end
-    
-    if evaluator then
-      data.target_boxes = data.target_boxes[1]
-      data.target_cls = data.target_cls[1]
-      boxes, logprobs, seq = model:forward_test(data.images, {clip_final_boxes=opt.clip_final_boxes}, data.region_proposals)
+    data.target_boxes = data.target_boxes[1]
+    data.target_cls = data.target_cls[1]
+    boxes, logprobs, seq = model:forward_test(data.images, {clip_final_boxes=opt.clip_final_boxes}, data.region_proposals)
 
-      if sequence_prediction then
-        -- captioning
-        seq_text = loader:decodeSequence(seq) -- translate to text
-        target_cls_text = loader:decodeSequence(data.target_cls:transpose(1,2):contiguous())
-        evaluator:addResult(info, boxes, logprobs, data.target_boxes, target_cls_text, seq_text)
-      else
-        -- detection
-        evaluator:addResult(info, boxes, logprobs, data.target_boxes, data.target_cls, seq)
-      end
-    end
-    if evaluatorMatlab then
-      evaluatorMatlab:addResult(info, boxes, logprobs, data.target_boxes, data.target_cls)
-    end
-
+    seq_text = loader:decodeSequence(seq) -- translate to text
+    target_cls_text = loader:decodeSequence(data.target_cls:transpose(1,2):contiguous())
+    evaluator:addResult(info, boxes, logprobs, data.target_boxes, target_cls_text, seq_text)
+  
     if boxes then
       print(string.format('processed image %s (%d/%d) of split %d, detected %d regions.',
         info.filename, info.split_bounds[1], math.min(max_images, info.split_bounds[2]), split, boxes:size(1)))
@@ -410,31 +319,9 @@ local function eval_split(split, max_images)
   print(string.format('validation loss: %f', loss_results.total_loss))
   out.loss_results = loss_results
 
-  if opt.eval_objectness == 1 then
-    out.objectness_results = utils.dict_average(objectness_stats)
-    print(out.objectness_results)
-  end
-
-  -- print meanAP statistics in case of object detection
-  if evaluator then
-    local ap_results = evaluator:evaluate()
-    print('Validation Average Precision Stats:')
-    if ap_results.ap then -- in captioning this wont exist since only one class exists
-      local idx_to_token = loader:getVocab()
-      for k,v in pairs(ap_results.ap) do
-        print(string.format('%d (%s): %f', k, idx_to_token[tostring(k)], 100*v))
-      end
-    end
-    print(string.format('mAP: %f', 100*ap_results.map))
-    out.ap = ap_results -- attach to output struct
-
-    if opt.cv_min_map >= 0 and iter > 0 then
-      if 100*ap_results.map < opt.cv_min_map then
-        -- kill the job
-        diediedie = true
-      end
-    end
-  end
+  local ap_results = evaluator:evaluate()
+  print(string.format('mAP: %f', 100*ap_results.map))
+  out.ap = ap_results -- attach to output struct
 
   return out
 end
@@ -458,7 +345,7 @@ while true do
     print('adding CNN to the optimization.')
     print('total number of parameters in net: ', grad_params:nElement())
     print('total number of parameters in CNN: ', cnn_params:nElement())
-    if model.usernn then
+    if model.usernn then -- this must be here because memory was reallocated around with :getParameters(). tricky!
       model.nets.lm_model:shareClones()
     end
   end
@@ -466,48 +353,11 @@ while true do
   -- compute the gradient
   local losses, stats = lossFun()
 
-  -- shut off learning if we just resumed training, for the gradient cache to warm up
-  local learning_rate = opt.learning_rate
-  local cnn_learning_rate = opt.cnn_learning_rate
-  if opt.checkpoint_start_from ~= '' and iter < 100 then
-    print('KILLING LEARNING RATE!')
-    learning_rate = 0
-    cnn_learning_rate = 0
-  end
-
-  -- perform parameter update
-  if opt.optim == 'rmsprop' then
-    rmsprop(params, grad_params, learning_rate, opt.optim_alpha, opt.optim_epsilon, optim_state)
-  elseif opt.optim == 'adagrad' then
-    adagrad(params, grad_params, learning_rate, opt.optim_epsilon, optim_state)
-  elseif opt.optim == 'sgd' then
-    sgd(params, grad_params, learning_rate)
-  elseif opt.optim == 'sgdm' then
-    sgdm(params, grad_params, learning_rate, opt.optim_alpha, optim_state)
-  elseif opt.optim == 'sgdmom' then
-    sgdmom(params, grad_params, learning_rate, opt.optim_alpha, optim_state)
-  elseif opt.optim == 'adam' then
-    adam(params, grad_params, learning_rate, opt.optim_alpha, opt.optim_beta, opt.optim_epsilon, optim_state)
-  else
-    error('bad option opt.optim')
-  end
-  
-  -- do an sgd step on cnn maybe
-  if opt.finetune_cnn_after >= 0 and iter >= opt.finetune_cnn_after and cnn_learning_rate > 0 then
-    if opt.cnn_optim == 'sgd' and opt.cnn_optim_alpha == 0 then
-      sgd(cnn_params, cnn_grad_params, cnn_learning_rate)
-    elseif opt.cnn_optim == 'sgdmom' then
-      sgdmom(cnn_params, cnn_grad_params, cnn_learning_rate, opt.cnn_optim_alpha, cnn_optim_state)
-    elseif opt.cnn_optim == 'sgdm' then
-      sgdm(cnn_params, cnn_grad_params, cnn_learning_rate, opt.cnn_optim_alpha, cnn_optim_state)
-    elseif opt.cnn_optim == 'adam' then
-      adam(cnn_params, cnn_grad_params, cnn_learning_rate, opt.cnn_optim_alpha, opt.cnn_optim_beta,
-           opt.optim_epsilon, cnn_optim_state)
-    end
-    --[[
-    adam(cnn_params, cnn_grad_params, opt.cnn_learning_rate, opt.optim_beta1, opt.optim_beta2,
-         opt.optim_epsilon, cnn_optim_state)
-    --]]
+  -- perform parameter update on the model
+  adam(params, grad_params, opt.learning_rate, opt.optim_beta1, opt.optim_beta2, opt.optim_epsilon, optim_state)
+  -- maybe also perform parameter update on the CNN
+  if opt.finetune_cnn_after >= 0 and iter >= opt.finetune_cnn_after then
+    adam(cnn_params, cnn_grad_params, opt.learning_rate, opt.optim_beta1, opt.optim_beta2, opt.optim_epsilon, cnn_optim_state)
   end
 
   -- print loss and timing/benchmarks
@@ -554,6 +404,5 @@ while true do
     break
   end
   if opt.max_iters > 0 and iter >= opt.max_iters then break end -- stopping criterion
-  if diediedie then break end -- kill signal from somewhere in the code.
 end
 

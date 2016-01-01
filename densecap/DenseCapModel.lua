@@ -412,25 +412,6 @@ function DenseCapModel:forward_backward(data)
   return self.stats.losses, self.stats
 end
 
-
-function DenseCapModel:getParameters(arg)
-  -- note, getParameters instead of parameters() is implemented since StnDetectionModel is not a Module
-  arg.with_cnn = utils.getopt(arg, 'with_cnn', false)
-  arg.with_rpn = utils.getopt(arg, 'with_rpn', true)
-  arg.with_recog = utils.getopt(arg, 'with_recog', true)
-  local fakenet = nn.Sequential()
-  if arg.with_cnn then fakenet:add(self.nets.conv_net2) end -- note: we only return conv_net2, not conv_net1
-  if arg.with_rpn then fakenet:add(self.nets.detection_module) end
-  if arg.with_recog then 
-    fakenet:add(self.nets.recog_base)
-    fakenet:add(self.nets.recog_class)
-    fakenet:add(self.nets.recog_box)
-    fakenet:add(self.nets.recog_lm_encode)
-    fakenet:add(self.nets.lm_model)
-  end
-  return fakenet:getParameters()
-end
-
 function DenseCapModel:getParametersSeparate(arg)
   -- returns CNN parameters separately
   arg.with_cnn = utils.getopt(arg, 'with_cnn', false)
