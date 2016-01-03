@@ -285,7 +285,6 @@ end
 local crit, parent = torch.class('nn.LanguageModelCriterion', 'nn.Criterion')
 function crit:__init()
   parent.__init(self)
-  self.losses = torch.Tensor()
 end
 
 --[[
@@ -303,8 +302,6 @@ function crit:updateOutput(input, seq)
   local L,N,Mp1 = input:size(1), input:size(2), input:size(3)
   local D = seq:size(1)
   assert(D == L-2, 'input Tensor should be 2 larger in time')
-  self.losses = self.losses or input.new()
-  self.losses:resize(N):zero()
 
   local loss = 0
   local n = 0
@@ -329,14 +326,12 @@ function crit:updateOutput(input, seq)
       if target_index ~= 0 then
         -- accumulate loss
         loss = loss - input[{ t,b,target_index }] -- -log(p)
-        self.losses[b] = self.losses[b] - input[{ t,b,target_index }]
         self.gradInput[{ t,b,target_index }] = -1
         n = n + 1
       end
 
     end
   end
-  self.losses:div(n)
   self.output = loss / n -- normalize by number of predictions that were made
   self.gradInput:div(n)
   return self.output
