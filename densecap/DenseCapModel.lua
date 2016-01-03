@@ -40,7 +40,7 @@ function DenseCapModel:__init(opt, idx_to_token)
   opt.seq_length = utils.getopt(opt, 'seq_length')
   opt.rnn_encoding_size = utils.getopt(opt, 'rnn_encoding_size', 512)
   opt.rnn_size = utils.getopt(opt, 'rnn_size', 512)
-  self.opt = opt
+  self.opt = opt -- TODO: this is... naughty. Do we want to create a copy instead?
 
   -- This will hold all components of the model.
   self.nets = {}

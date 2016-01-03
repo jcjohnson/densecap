@@ -7,11 +7,7 @@ local net_utils = {}
 
 function net_utils.load_cnn(name, backend, path_offset)
   local model_dir, proto_file, model_file = nil, nil, nil
-  if name == 'CaffeNet' then
-    model_dir = 'data/models/bvlc_reference_caffenet'
-    proto_file = 'deploy.prototxt'
-    model_file = 'bvlc_reference_caffenet.caffemodel'
-  elseif name == 'vgg-16' then
+  if name == 'vgg-16' then
     model_dir = 'data/models/vgg-16'
     proto_file = 'VGG_ILSVRC_16_layers_deploy.prototxt'
     model_file = 'VGG_ILSVRC_16_layers.caffemodel'

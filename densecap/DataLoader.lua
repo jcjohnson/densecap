@@ -5,20 +5,20 @@ local box_utils = require 'densecap.box_utils'
 local DataLoader = torch.class('DataLoader')
 
 function DataLoader:__init(opt)
+  self.h5_file = utils.getopt(opt, 'h5_file') -- required h5file with images and other (made with prepro script)
+  self.json_file = utils.getopt(opt, 'json_file') -- required json file with vocab etc. (made with prepro script)
   self.h5_read_all = utils.getopt(opt, 'h5_read_all', false) -- read everything in memory once?
   self.debug_max_train_images = utils.getopt(opt, 'debug_max_train_images', -1)
   self.proposal_regions_h5 = utils.getopt(opt, 'proposal_regions_h5', '')
-  assert(opt.h5_file ~= nil, 'DataLoader input error: must provide h5_file')
-  assert(opt.json_file ~= nil, 'DataLoader input error: must provide json_file')
-
+  
   -- load the json file which contains additional information about the dataset
-  print('DataLoader loading json file: ', opt.json_file)
-  self.info = utils.read_json(opt.json_file)
+  print('DataLoader loading json file: ', self.json_file)
+  self.info = utils.read_json(self.json_file)
   self.vocab_size = utils.count_keys(self.info.idx_to_token)
 
   -- open the hdf5 file
-  print('DataLoader loading h5 file: ', opt.h5_file)
-  self.h5_file = hdf5.open(opt.h5_file, 'r')
+  print('DataLoader loading h5 file: ', self.h5_file)
+  self.h5_file = hdf5.open(self.h5_file, 'r')
   local keys = {}
   table.insert(keys, 'box_to_img')
   table.insert(keys, 'boxes')
@@ -42,8 +42,8 @@ function DataLoader:__init(opt)
   -- open region proposals file for reading. This is useful if we, e.g.
   -- want to use the ground truth boxes, or if we want to use external region proposals
   if string.len(self.proposal_regions_h5) > 0 then
-    print('DataLoader loading objectness boxes from h5 file: ', opt.proposal_regions_h5)
-    self.obj_boxes_file = hdf5.open(opt.proposal_regions_h5, 'r')
+    print('DataLoader loading objectness boxes from h5 file: ', self.proposal_regions_h5)
+    self.obj_boxes_file = hdf5.open(self.proposal_regions_h5, 'r')
     self.obj_img_to_first_box = self.obj_boxes_file:read('/img_to_first_box'):all()
     self.obj_img_to_last_box = self.obj_boxes_file:read('/img_to_last_box'):all()
   end
