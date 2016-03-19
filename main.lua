@@ -17,6 +17,7 @@ require 'densecap.DenseCapModel'
 require 'densecap.optim_updates'
 local utils = require 'densecap.utils'
 local opts = require 'opts'
+local models = require 'models'
 
 -- local LSTM = require 'LSTM'
 -- local box_utils = require 'box_utils'
@@ -43,51 +44,17 @@ end
 
 -- initialize the data loader class
 local loader = DataLoader(opt)
-local seq_length = loader:getSeqLength()
-local vocab_size = loader:getVocabSize()
+opt.seq_length = loader:getSeqLength()
+opt.vocab_size = loader:getVocabSize()
 
 -- initialize the DenseCap model object
-local model
-if opt.checkpoint_start_from == '' then
-  print('initializing a DenseCap model from scratch...')
-  opt.vocab_size = vocab_size -- hmm, not very pretty...
-  opt.seq_length = seq_length
-  model = DenseCapModel(opt, loader.info.idx_to_token)
-else
-  print('initializing a DenseCap model from ' .. opt.checkpoint_start_from)
-  model = torch.load(opt.checkpoint_start_from).model  
-  model.opt.objectness_weight = opt.objectness_weight
-  model.nets.detection_module.opt.obj_weight = opt.objectness_weight
-  model.opt.box_reg_weight = opt.box_reg_weight
-  model.nets.box_reg_crit.w = opt.final_box_reg_weight
-  model.opt.classification_weight = opt.classification_weight
-  local rpn = model.nets.detection_module.nets.rpn
-  rpn:findModules('nn.RegularizeLayer')[1].w = opt.box_reg_decay
-  model.opt.sampler_high_thresh = opt.iou_high_thresh
-  model.opt.sampler_low_thresh = opt.iou_low_thresh
-  model.opt.train_remove_outbounds_boxes = opt.train_remove_outbounds_boxes
-  model.opt.captioning_weight = opt.captioning_weight
-end
-
--- Find all Dropout layers and set their probabilities according to provided option
-local dropout_modules = model.nets.recog_base:findModules('nn.Dropout')
-for i, dropout_module in ipairs(dropout_modules) do
-  dropout_module.p = opt.drop_prob
-end
+local model = models.setup(opt)
 
 -- get the parameters vector
-local params, grad_params, cnn_params, cnn_grad_params = model:getParametersSeparate{
-                              with_cnn=opt.finetune_cnn_after == 0,
-                              with_rpn=true,
-                              with_recog_net=true}
+local params, grad_params, cnn_params, cnn_grad_params = model:getParameters()
 print('total number of parameters in net: ', grad_params:nElement())
-if cnn_grad_params then
-  print('total number of parameters in CNN: ', cnn_grad_params:nElement())
-else
-  print('CNN is not being trained right now (0 parameters).')
-end
-
-model.nets.lm_model:shareClones()
+print('total number of parameters in CNN: ', cnn_grad_params:nElement())
+model.nets.lm_model:shareClones() -- TOOD: sub in single LSTM block module, get rid of this line
 
 -------------------------------------------------------------------------------
 -- Loss function
@@ -139,7 +106,7 @@ local function lossFun()
 
   if iter % 25 == 0 then
     local boxes, scores, seq = model:forward_test(data.images)
-    local txt = model:decodeSequence(seq)
+    local txt = loader:decodeSequence(seq)
     print(txt)
   end
   
@@ -253,21 +220,6 @@ local optim_state = {}
 local cnn_optim_state = {}
 local best_val_score = -1
 while true do  
-
-  -- We need to rebuild params and grad_params when we start finetuning
-  if iter > 0 and iter == opt.finetune_cnn_after then
-    params, grad_params, cnn_params, cnn_grad_params = model:getParametersSeparate{
-                            with_cnn=true,
-                            with_rpn=true,
-                            with_pred_net=true
-                         }
-    print('adding CNN to the optimization.')
-    print('total number of parameters in net: ', grad_params:nElement())
-    print('total number of parameters in CNN: ', cnn_params:nElement())
-    -- following line must be here because memory was reallocated around 
-    -- with :getParameters(). tricky!
-    model.nets.lm_model:shareClones()
-  end
 
   -- compute the gradient
   local losses, stats = lossFun()

@@ -16,7 +16,7 @@ local DenseCapModel = torch.class('DenseCapModel')
 
 --------------------------------------------------------------------------------
 
-function DenseCapModel:__init(opt, idx_to_token)
+function DenseCapModel:__init(opt)
   opt = opt or {}  
   opt.cnn_name = utils.getopt(opt, 'cnn_name', 'vgg-16')
   opt.backend = utils.getopt(opt, 'backend', 'cudnn')
@@ -24,10 +24,6 @@ function DenseCapModel:__init(opt, idx_to_token)
   opt.dtype = utils.getopt(opt, 'dtype', 'torch.CudaTensor')
   opt.vocab_size = utils.getopt(opt, 'vocab_size')
   opt.std = utils.getopt(opt, 'std', 0.01) -- Used to initialize new layers
-  
-  assert(idx_to_token)
-  print('saving idx_to_token')
-  self.idx_to_token = idx_to_token
 
   -- Ensure that all options for loss were specified
   utils.ensureopt(opt, 'mid_box_reg_weight')
@@ -174,39 +170,6 @@ function DenseCapModel:reset_stats()
   self.stats.losses = {}
   self.stats.vars = {}
 end
-
-
---[[
-Decode a LongTensor of token indices into a table of strings.
-
-Input:
-- seq: LongTensor of shape D x N where each element is between 1 and self.opt.vocab_size.
-
-Returns:
-- captions: An array with N strings, each of length < D.
---]]
-function DenseCapModel:decodeSequence(seq)
-  local D, N = seq:size(1), seq:size(2)
-  local out = {}
-  local itow = self.idx_to_token
-  for i = 1, N do
-    local txt = ''
-    for j = 1, D do
-      local ix = seq[{j,i}]
-      if ix >= 1 and ix <= self.opt.vocab_size then
-        -- a word, translate it
-        if j >= 2 then txt = txt .. ' ' end -- space
-        txt = txt .. itow[tostring(ix)]
-      else
-        -- END token
-        break
-      end
-    end
-    table.insert(out, txt)
-  end
-  return out
-end
-
 
 --[[
 Run the model forward to compute loss and backward to compute gradients.
@@ -412,28 +375,19 @@ function DenseCapModel:forward_backward(data)
   return self.stats.losses, self.stats
 end
 
-function DenseCapModel:getParametersSeparate(arg)
-  -- returns CNN parameters separately
-  arg.with_cnn = utils.getopt(arg, 'with_cnn', false)
-  arg.with_rpn = utils.getopt(arg, 'with_rpn', true)
-  arg.with_recog = utils.getopt(arg, 'with_recog', true)
+function DenseCapModel:getParameters()
   
-  -- serialize convnet params maybe
-  local cnn_params, cnn_grad_params
-  if arg.with_cnn then
-    cnn_params, cnn_grad_params = self.nets.conv_net2:getParameters()
-  end
-
+  -- serialize convnet params
+  local cnn_params, cnn_grad_params = self.nets.conv_net2:getParameters()
+  
   -- serialize rest params
   local fakenet = nn.Sequential()
-  if arg.with_rpn then fakenet:add(self.nets.detection_module) end
-  if arg.with_recog then 
-    fakenet:add(self.nets.recog_base)
-    fakenet:add(self.nets.recog_class)
-    fakenet:add(self.nets.recog_box)
-    fakenet:add(self.nets.recog_lm_encode)
-    fakenet:add(self.nets.lm_model)
-  end
+  fakenet:add(self.nets.detection_module)
+  fakenet:add(self.nets.recog_base)
+  fakenet:add(self.nets.recog_class)
+  fakenet:add(self.nets.recog_box)
+  fakenet:add(self.nets.recog_lm_encode)
+  fakenet:add(self.nets.lm_model)
   local params, grad_params = fakenet:getParameters()
 
   -- return both separately
