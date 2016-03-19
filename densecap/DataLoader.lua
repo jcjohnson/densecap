@@ -5,8 +5,8 @@ local box_utils = require 'densecap.box_utils'
 local DataLoader = torch.class('DataLoader')
 
 function DataLoader:__init(opt)
-  self.h5_file = utils.getopt(opt, 'h5_file') -- required h5file with images and other (made with prepro script)
-  self.json_file = utils.getopt(opt, 'json_file') -- required json file with vocab etc. (made with prepro script)
+  self.h5_file = utils.getopt(opt, 'data_h5') -- required h5file with images and other (made with prepro script)
+  self.json_file = utils.getopt(opt, 'data_json') -- required json file with vocab etc. (made with prepro script)
   self.h5_read_all = utils.getopt(opt, 'h5_read_all', false) -- read everything in memory once?
   self.debug_max_train_images = utils.getopt(opt, 'debug_max_train_images', -1)
   self.proposal_regions_h5 = utils.getopt(opt, 'proposal_regions_h5', '')
