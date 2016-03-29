@@ -1,4 +1,4 @@
-local box_utils = require 'box_utils'
+local box_utils = require 'densecap.box_utils'
 
 
 local tester = torch.Tester()

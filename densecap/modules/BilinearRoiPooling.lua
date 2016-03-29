@@ -1,6 +1,7 @@
 require 'torch'
 require 'nn'
 
+require 'stn'
 require 'densecap.modules.BatchBilinearSamplerBHWD'
 require 'densecap.modules.BoxToAffine'
 

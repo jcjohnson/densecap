@@ -21,7 +21,6 @@ local models = require 'models'
 local eval_utils = require 'densecap.eval_utils'
 
 -- local LSTM = require 'LSTM'
--- local box_utils = require 'box_utils'
 -- local utils = require 'utils'
 -- local voc_utils = require 'voc_utils'
 -- local cjson = require 'cjson' -- http://www.kyne.com.au/~mark/software/lua-cjson.php

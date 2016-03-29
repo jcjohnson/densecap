@@ -1,5 +1,5 @@
-local box_utils = require 'box_utils'
-local utils = require 'utils'
+local box_utils = require 'densecap.box_utils'
+local utils = require 'densecap.utils'
 local eval_utils = {}
 
 

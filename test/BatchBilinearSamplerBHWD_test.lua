@@ -3,6 +3,7 @@ require 'nn'
 require 'cutorch'
 require 'cunn'
 
+require 'stn'
 require 'densecap.modules.BatchBilinearSamplerBHWD'
 
 local tests = {}
