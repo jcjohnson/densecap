@@ -6,7 +6,6 @@ targets are not squeezed. This was giving strange results for single-element
 minibatches.
 --]]
 
-
 function CrossEntropyCriterion:__init(weights)
    Criterion.__init(self)
    self.lsm = nn.LogSoftMax()

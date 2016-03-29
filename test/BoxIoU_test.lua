@@ -3,7 +3,7 @@ require 'nn'
 require 'cutorch'
 require 'cunn'
 
-require 'BoxIoU'
+require 'densecap.modules.BoxIoU'
 
 
 local tests = {}

@@ -5,7 +5,7 @@ require 'cunn'
 
 local gradcheck = require 'gradcheck'
 local utils = require 'utils'
-require 'BoxToAffine'
+require 'densecap.modules.BoxToAffine'
 
 local tests = {}
 local tester = torch.Tester()

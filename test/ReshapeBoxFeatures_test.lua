@@ -3,10 +3,9 @@ require 'nn'
 require 'cutorch'
 require 'cunn'
 
-require 'MakeBoxes'
 require 'ReshapeBoxFeatures'
+require 'densecap.modules.MakeBoxes'
 local gradcheck = require 'gradcheck'
-
 
 local tests = {}
 local tester = torch.Tester()

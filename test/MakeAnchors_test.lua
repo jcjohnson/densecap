@@ -2,11 +2,11 @@ require 'torch'
 require 'cutorch'
 require 'nn'
 
-require 'ApplyBoxTransform'
-require 'MakeAnchors'
 require 'ReshapeBoxFeatures'
-require 'MakeBoxes'
 
+require 'densecap.modules.ApplyBoxTransform'
+require 'densecap.modules.MakeAnchors'
+require 'densecap.modules.MakeBoxes'
 
 local tests = {}
 local tester = torch.Tester()

@@ -1,4 +1,5 @@
-require 'densecap.BoxIoU'
+
+require 'densecap.modules.BoxIoU'
 local box_utils = require 'densecap.box_utils'
 local utils = require 'densecap.utils'
 

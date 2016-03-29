@@ -536,7 +536,7 @@ function box_utils.eval_box_recall(boxes, gt_boxes, ns)
 
   local stats = {}
 
-  require 'BoxIoU'
+  require 'densecap.modules.BoxIoU'
   local boxes_view = boxes:view(1, -1, 4)
   local gt_boxes_view = gt_boxes:view(1, -1, 4)
   local box_iou = nn.BoxIoU():type(boxes:type())

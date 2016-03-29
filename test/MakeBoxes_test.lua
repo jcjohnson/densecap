@@ -3,7 +3,7 @@ require 'nn'
 require 'cutorch'
 require 'cunn'
 
-require 'MakeBoxes'
+require 'densecap.modules.MakeBoxes'
 local gradcheck = require 'gradcheck'
 
 local tests = {}

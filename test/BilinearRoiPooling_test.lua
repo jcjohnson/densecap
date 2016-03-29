@@ -3,7 +3,7 @@ require 'nn'
 require 'cutorch'
 require 'cunn'
 
-require 'BilinearRoiPooling.lua'
+require 'densecap.modules.BilinearRoiPooling.lua'
 
 
 local tests = {}

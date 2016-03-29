@@ -3,7 +3,7 @@ require 'nn'
 require 'cutorch'
 require 'cunn'
 
-require 'BoxSamplerHelper'
+require 'densecap.modules.BoxSamplerHelper'
 
 local tests = {}
 local tester = torch.Tester()

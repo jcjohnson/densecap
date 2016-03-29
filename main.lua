@@ -18,6 +18,7 @@ require 'densecap.optim_updates'
 local utils = require 'densecap.utils'
 local opts = require 'opts'
 local models = require 'models'
+local eval_utils = require 'densecap.eval_utils'
 
 -- local LSTM = require 'LSTM'
 -- local box_utils = require 'box_utils'
@@ -25,12 +26,12 @@ local models = require 'models'
 -- local voc_utils = require 'voc_utils'
 -- local cjson = require 'cjson' -- http://www.kyne.com.au/~mark/software/lua-cjson.php
 -- require 'vis_utils'
--- local eval_utils = require 'eval_utils'
 
 -------------------------------------------------------------------------------
 -- Initializations
 -------------------------------------------------------------------------------
 local opt = opts.parse(arg)
+print(opt)
 torch.setdefaulttensortype('torch.FloatTensor')
 torch.manualSeed(opt.seed)
 if opt.gpuid >= 0 then

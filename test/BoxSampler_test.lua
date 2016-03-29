@@ -4,7 +4,7 @@ require 'cutorch'
 require 'cunn'
 
 local utils = require 'utils'
-require 'BoxSampler'
+require 'densecap.modules.BoxSampler'
 
 local tests = {}
 local tester = torch.Tester()

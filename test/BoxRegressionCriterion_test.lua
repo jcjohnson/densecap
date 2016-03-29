@@ -1,7 +1,7 @@
 require 'torch'
 
 local gradcheck = require 'gradcheck'
-require 'BoxRegressionCriterion'
+require 'densecap.modules.BoxRegressionCriterion'
 
 local tests = {}
 local tester = torch.Tester()

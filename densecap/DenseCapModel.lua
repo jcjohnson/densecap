@@ -1,12 +1,12 @@
 require 'torch'
 require 'nn'
 
-require 'densecap.ApplyBoxTransform'
-require 'densecap.BilinearRoiPooling'
-require 'densecap.BoxRegressionCriterion'
 require 'densecap.DetectionModule'
-require 'densecap.LogisticCriterion'
 require 'densecap.LanguageModel'
+require 'densecap.modules.BoxRegressionCriterion'
+require 'densecap.modules.BilinearRoiPooling'
+require 'densecap.modules.ApplyBoxTransform'
+require 'densecap.modules.LogisticCriterion'
 
 local box_utils = require 'densecap.box_utils'
 local net_utils = require 'densecap.net_utils'

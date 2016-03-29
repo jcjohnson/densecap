@@ -1,13 +1,10 @@
+require 'torch'
 require 'nn'
-require 'stn'
 
-require 'densecap.BoxToAffine'
-require 'densecap.BatchBilinearSamplerBHWD'
-require 'densecap.NaiveBatchBilinearSamplerBHWD'
-
+require 'densecap.modules.BatchBilinearSamplerBHWD'
+require 'densecap.modules.BoxToAffine'
 
 local layer, parent = torch.class('nn.BilinearRoiPooling', 'nn.Module')
-
 
 --[[
 BilinearRoiPooling is a layer that uses bilinear sampling to pool featurs for a
@@ -34,7 +31,7 @@ Return:
 - roi_features:
 --]]
 
-function layer:__init(height, width, naive_sampler)
+function layer:__init(height, width)
   parent.__init(self)
   self.height = height
   self.width = width
@@ -57,12 +54,8 @@ function layer:__init(height, width, naive_sampler)
   local parallel = nn.ParallelTable()
   parallel:add(nn.Transpose({1, 2}, {2, 3}))
   parallel:add(box_branch)
-  self.net:add(parallel)
-  if naive_sampler then
-    self.net:add(nn.NaiveBatchBilinearSamplerBHWD())
-  else
-    self.net:add(nn.BatchBilinearSamplerBHWD())
-  end
+  self.net:add(parallel)  
+  self.net:add(nn.BatchBilinearSamplerBHWD())
   self.net:add(nn.Transpose({3, 4}, {2, 3}))
 
   -- Set these by calling setImageSize

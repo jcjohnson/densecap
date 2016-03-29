@@ -3,10 +3,7 @@ require 'nn'
 require 'cutorch'
 require 'cunn'
 
-require 'stn'
-require 'BatchBilinearSamplerBHWD'
-require 'NaiveBatchBilinearSamplerBHWD'
-
+require 'densecap.modules.BatchBilinearSamplerBHWD'
 
 local tests = {}
 local tester = torch.Tester()

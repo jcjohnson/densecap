@@ -1,8 +1,8 @@
 require 'torch'
 require 'cutorch'
 
-require 'ApplyBoxTransform'
-require 'InvertBoxTransform'
+require 'densecap.modules.ApplyBoxTransform'
+require 'densecap.modules.InvertBoxTransform'
 
 local gradcheck = require 'gradcheck'
 

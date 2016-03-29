@@ -1,4 +1,4 @@
-require 'densecap.BoxSampler'
+require 'densecap.modules.BoxSampler'
 
 local helper, parent = torch.class('nn.BoxSamplerHelper', 'nn.Module')
 
