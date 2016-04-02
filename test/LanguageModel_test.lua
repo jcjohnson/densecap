@@ -92,7 +92,7 @@ function sampleTest(dtype)
     local N = 20
     local image_vecs = torch.randn(N, D):type(dtype)
     
-    local out = lm:forward{image_vecs}
+    local out = lm:forward{image_vecs, image_vecs.new()}
     check_dims(out, {N, T})
   end
 end

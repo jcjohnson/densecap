@@ -80,8 +80,8 @@ function simpleTest(dtype)
     local N = roi_features:size(1)
     check_dims(roi_features, {N, C, Y, X})
     check_dims(roi_boxes, {N, 4})
-    tester:assert(gt_boxes_sample == nil)
-    tester:assert(gt_labels_sample == nil)
+    tester:assert(gt_boxes_sample:nElement() == 0)
+    tester:assert(gt_labels_sample:nElement() == 0)
   end
 end
 

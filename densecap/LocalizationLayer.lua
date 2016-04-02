@@ -36,9 +36,9 @@ Returns: List of:
   roi_boxes[{{1, pos}}] gives the coordinates for the positive boxes
   and the rest are negatives.
 - gt_boxes_sample: pos x 4 array of ground-truth region boxes corresponding to
-  sampled positives. This will be nil at test-time.
+  sampled positives. This will be an empty Tensor at test-time.
 - gt_labels_sample: pos x L array of ground-truth labels corresponding to sampled
-  positives. This will be nil at test-time.
+  positives. This will be an empty Tensor at test-time.
 
 Before each forward pass, you need to call the setImageSize method to set the size
 of the underlying image for that forward pass. During training, you also need to call
@@ -337,7 +337,8 @@ function layer:_forward_test(input)
     self.stats.vars = vars
   end
   
-  self.output = {roi_features, rpn_boxes_nms, nil, nil}
+  local empty = roi_features.new()
+  self.output = {roi_features, rpn_boxes_nms, empty, empty}
   return self.output
   -- return roi_features, rpn_boxes_nms, scores_nms
 end

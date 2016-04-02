@@ -20,9 +20,12 @@ function LM:__init(opt)
   self.idx_to_token = utils.getopt(opt, 'idx_to_token')
   self.dropout = utils.getopt(opt, 'dropout', 0)
 
+  local W, D = self.input_encoding_size, self.image_vector_dim
+  local V, H = self.vocab_size, self.rnn_size
+
   -- For mapping from image vectors to word vectors
   self.image_encoder = nn.Sequential()
-  self.image_encoder:add(nn.Linear(self.image_vector_dim, self.input_encoding_size))
+  self.image_encoder:add(nn.Linear(D, W))
   self.image_encoder:add(nn.ReLU(true))
   self.image_encoder:add(nn.View(1, -1):setNumInputDims(1))
   
@@ -31,12 +34,14 @@ function LM:__init(opt)
   self.NULL_TOKEN = self.vocab_size + 2
 
   -- For mapping word indices to word vectors
-  self.lookup_table = nn.LookupTable(self.vocab_size + 2, self.input_encoding_size)
+  local V, W = self.vocab_size, self.input_encoding_size
+  self.lookup_table = nn.LookupTable(V + 2, W)
   
   -- Change this to sample from the distribution instead
   self.sample_argmax = true
 
-  -- self.rnn maps wordvecs of shape N x T x D to word probabilities of shape N x T x V
+  -- self.rnn maps wordvecs of shape N x T x W to word probabilities
+  -- of shape N x T x (V + 1)
   self.rnn = nn.Sequential()
   for i = 1, self.num_layers do
     local input_dim = self.rnn_size
@@ -52,7 +57,7 @@ function LM:__init(opt)
   self.view_in = nn.View(1, 1, -1):setNumInputDims(3)
   self.view_out = nn.View(1, -1):setNumInputDims(2)
   self.rnn:add(self.view_in)
-  self.rnn:add(nn.Linear(self.rnn_size, self.vocab_size + 1))
+  self.rnn:add(nn.Linear(H, V + 1))
   self.rnn:add(self.view_out)
 
   -- self.net maps a table {image_vecs, gt_seq} to word probabilities
@@ -102,7 +107,7 @@ function LM:updateOutput(input)
   local image_vectors = input[1]
   local gt_sequence = input[2]
     
-  if gt_sequence ~= nil then
+  if gt_sequence:nElement() > 0 then
     -- Add a start token to the start of the gt_sequence, and replace
     -- 0 with NULL_TOKEN
     local N, T = gt_sequence:size(1), gt_sequence:size(2)
