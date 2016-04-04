@@ -297,7 +297,10 @@ function DenseCapModel:forward_backward(data)
   local grad_lm_output = self.crits.lm_crit:backward(lm_output, target)
   grad_lm_output:mul(self.opt.captioning_weight)
 
+  local ll_losses = self.nets.localization_layer.stats.losses
   local losses = {
+    mid_objectness_loss=ll_losses.obj_loss_pos + ll_losses.obj_loss_neg,
+    mid_box_reg_loss=ll_losses.box_reg_loss,
     end_objectness_loss=end_objectness_loss,
     end_box_reg_loss=end_box_reg_loss,
     captioning_loss=captioning_loss,
@@ -314,5 +317,7 @@ function DenseCapModel:forward_backward(data)
   grad_out[7] = gt_labels.new(#gt_labels):zero()
 
   self:backward(input, grad_out)
+
+  return losses
 end
 
