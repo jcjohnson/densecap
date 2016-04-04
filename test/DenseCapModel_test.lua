@@ -31,6 +31,12 @@ function tests.simpleTest()
   local gt_boxes = torch.randn(1, B, 4):add(1.0):mul(100):abs():type(dtype)
   local gt_labels = torch.LongTensor(1, B, L):random(V):type(dtype)
 
+  model:forward_backward{
+    image=img,
+    gt_boxes=gt_boxes,
+    gt_labels=gt_labels,
+  }
+  --[[
   -- Training time forward pass
   model:setGroundTruth(gt_boxes, gt_labels)
   local out = model:forward(img)
@@ -40,6 +46,9 @@ function tests.simpleTest()
   model:evaluate()
   local out = model:forward(img)
   print(out)
+
+  print(model.net)
+  --]]
 end
 
 

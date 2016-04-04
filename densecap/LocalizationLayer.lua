@@ -495,9 +495,6 @@ function layer:_forward_train(input)
 end
 
 
---------------------------------------------------------------------------------
-
-
 function layer:updateGradInput(input, gradOutput)
   assert(self.train, 'can only call updateGradInput in training mode')
   assert(self.gt_boxes and self.gt_labels and not self._called_backward_gt,

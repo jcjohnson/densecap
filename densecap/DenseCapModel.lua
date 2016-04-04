@@ -28,7 +28,7 @@ function DenseCapModel:__init(opt)
   opt.std = utils.getopt(opt, 'std', 0.01) -- Used to initialize new layers
 
   -- For test-time handling of final boxes
-  opt.final_box_nms = utils.getopt(opt, 'final_nms_thresh', 0.3)
+  opt.final_nms_thresh = utils.getopt(opt, 'final_nms_thresh', 0.3)
 
   -- Ensure that all options for loss were specified
   utils.ensureopt(opt, 'mid_box_reg_weight')
@@ -90,7 +90,7 @@ function DenseCapModel:__init(opt)
   self.nets.recog_base = net_utils.subsequence(cnn, recog_start, recog_end)
   
   -- Objectness branch; outputs positive / negative probabilities for final boxes
-  self.nets.objectness_branch = nn.Linear(fc_dim, 2)
+  self.nets.objectness_branch = nn.Linear(fc_dim, 1)
   self.nets.objectness_branch.weight:normal(0, opt.std)
   self.nets.objectness_branch.bias:zero()
   
@@ -117,38 +117,48 @@ function DenseCapModel:__init(opt)
   self.crits = {}
   self.crits.objectness_crit = nn.LogisticCriterion()
   self.crits.box_reg_crit = nn.BoxRegressionCriterion(opt.end_box_reg_weight)
-  self.lm_crit = nn.TemporalCrossEntropyCriterion()
+  self.crits.lm_crit = nn.TemporalCrossEntropyCriterion()
 
   self:training()
+  self.finetune_cnn = false
 end
 
 
 function DenseCapModel:_buildRecognitionNet()
   local roi_feats = nn.Identity()()
   local roi_boxes = nn.Identity()()
-  local gt_seq = nn.Identity()()
   local gt_boxes = nn.Identity()()
+  local gt_labels = nn.Identity()()
 
   local roi_codes = self.nets.recog_base(roi_feats)
   local objectness_scores = self.nets.objectness_branch(roi_codes)
 
-  local pos_roi_codes = nn.PosSlicer(){roi_codes, gt_seq}
+  local pos_roi_codes = nn.PosSlicer(){roi_codes, gt_labels}
   local pos_roi_boxes = nn.PosSlicer(){roi_boxes, gt_boxes}
   
   local final_box_trans = self.nets.box_reg_branch(pos_roi_codes)
   local final_boxes = nn.ApplyBoxTransform(){pos_roi_boxes, final_box_trans}
 
-  local lm_input = {pos_roi_codes, gt_seq}
+  local lm_input = {pos_roi_codes, gt_labels}
   local lm_output = self.nets.language_model(lm_input)
 
-  local inputs = {roi_feats, roi_boxes, gt_seq, gt_boxes}
+  -- Annotate nodes
+  roi_codes:annotate{name='recog_base'}
+  objectness_scores:annotate{name='objectness_branch'}
+  pos_roi_codes:annotate{name='code_slicer'}
+  pos_roi_boxes:annotate{name='box_slicer'}
+  final_box_trans:annotate{name='box_reg_branch'}
+
+  local inputs = {roi_feats, roi_boxes, gt_boxes, gt_labels}
   local outputs = {
     objectness_scores,
     pos_roi_boxes, final_box_trans, final_boxes,
     lm_output,
-    gt_boxes, gt_seq,
+    gt_boxes, gt_labels,
   }
-  return nn.gModule(inputs, outputs)
+  local mod = nn.gModule(inputs, outputs)
+  mod.name = 'recognition_network'
+  return mod
 end
 
 
@@ -178,10 +188,10 @@ function DenseCapModel:updateOutput(input)
   self.output = self.net:forward(input)
 
   -- At test-time, apply NMS to final boxes
-  if opt.final_nms_thresh > 0 then
+  if not self.train and self.opt.final_nms_thresh > 0 then
     local final_boxes_float = self.output[4]:float()
     local class_scores_float = self.output[1]:float()
-    local boxes_scores = torch.FloatTensor(final_boxes:size(1), 5)
+    local boxes_scores = torch.FloatTensor(final_boxes_float:size(1), 5)
     local boxes_x1y1x2y2 = box_utils.xcycwh_to_x1y1x2y2(final_boxes_float)
     boxes_scores[{{}, {1, 4}}]:copy(boxes_x1y1x2y2)
     boxes_scores[{{}, 5}]:copy(class_scores_float[{{}, 1}])
@@ -192,15 +202,7 @@ function DenseCapModel:updateOutput(input)
     -- TODO: In the old StnDetectionModel we also applied NMS to the
     -- variables dumped by the LocalizationLayer. Do we want to do that?
   end
-end
 
-
-function DenseCapModel:forward_train(input)
-  assert(not self._called_forward,
-    'Must call setGroundTruth before training-time forward pass')
-  self._called_forward = true
-
-  self.output = self.net:forward(input)
   return self.output
 end
 
@@ -210,5 +212,107 @@ function DenseCapModel:setGroundTruth(gt_boxes, gt_labels)
   self.gt_labels = gt_labels
   self._called_forward = false
   self.nets.localization_layer:setGroundTruth(gt_boxes, gt_labels)
+end
+
+
+function DenseCapModel:backward(input, gradOutput)
+  -- Manually backprop through part of the network
+  -- self.net has 4 elements:
+  -- (1) CNN part 1        (2) CNN part 2
+  -- (3) LocalizationLayer (4) Recognition network
+  -- We always backprop through (3) and (4), and only backprop through
+  -- (2) when finetuning; we never backprop through (1).
+  -- Note that this means we break the module API in this method, and don't
+  -- actually return gradients with respect to our input.
+
+  local end_idx = 3
+  if self.finetune_cnn then end_idx = 2 end
+  local dout = gradOutput
+  for i = 4, end_idx, -1 do
+    local layer_input = self.net:get(i-1).output
+    dout = self.net:get(i):backward(layer_input, dout)
+  end
+
+  self.gradInput = dout
+  return self.gradInput
+end
+
+
+--[[
+Perform a (training-time) forward pass to compute output and loss,
+and a backward pass to compute gradients.
+
+This is a nonstandard method, but it allows the DenseCapModel to
+have control over its own Criterions.
+
+Input: data is table with the following keys:
+- image: 1 x 3 x H x W array of pixel data
+- gt_boxes: 1 x B x 4 array of ground-truth object boxes
+  TODO: What format are the boxes?
+- gt_labels: 1 x B x L array of ground-truth sequences for boxes
+--]]
+function DenseCapModel:forward_backward(data)
+  self:training()
+
+  -- Run the model forward
+  self:setGroundTruth(data.gt_boxes, data.gt_labels)
+  local out = self:forward(data.image)
+
+  -- Pick out the outputs we care about
+  local objectness_scores = out[1]
+  local pos_roi_boxes = out[2]
+  local final_box_trans = out[3]
+  local lm_output = out[5]
+  local gt_boxes = out[6]
+  local gt_labels = out[7]
+
+  local num_boxes = objectness_scores:size(1)
+  local num_pos = pos_roi_boxes:size(1)
+
+  -- Compute final objectness loss and gradient
+  local objectness_labels = torch.LongTensor(num_boxes):zero()
+  objectness_labels[{{1, num_pos}}]:fill(1)
+  local end_objectness_loss = self.crits.objectness_crit:forward(
+                                         objectness_scores, objectness_labels)
+                                       
+  end_objectness_loss = end_objectness_loss * self.opt.end_objectness_weight
+  local grad_objectness_scores = self.crits.objectness_crit:backward(
+                                      objectness_scores, objectness_labels)
+  grad_objectness_scores:mul(self.opt.end_objectness_weight)
+
+  -- Compute box regression loss; this one multiplies by the weight inside
+  -- the criterion so we don't do it manually.
+  local end_box_reg_loss = self.crits.box_reg_crit:forward(
+                                {pos_roi_boxes, final_box_trans},
+                                gt_boxes)
+  local din = self.crits.box_reg_crit:backward(
+                         {pos_roi_boxes, final_box_trans},
+                         gt_boxes)
+  local grad_pos_roi_boxes, grad_final_box_trans = unpack(din)
+
+  -- Compute captioning loss
+  local target = self.nets.language_model:getTarget(gt_labels)
+  local captioning_loss = self.crits.lm_crit:forward(lm_output, target)
+  captioning_loss = captioning_loss * self.opt.captioning_weight
+  local grad_lm_output = self.crits.lm_crit:backward(lm_output, target)
+  grad_lm_output:mul(self.opt.captioning_weight)
+
+  local losses = {
+    end_objectness_loss=end_objectness_loss,
+    end_box_reg_loss=end_box_reg_loss,
+    captioning_loss=captioning_loss,
+  }
+
+  -- Run the model backward
+  local grad_out = {}
+  grad_out[1] = grad_objectness_scores
+  grad_out[2] = grad_pos_roi_boxes
+  grad_out[3] = grad_final_box_trans
+  grad_out[4] = out[4].new(#out[4]):zero()
+  grad_out[5] = grad_lm_output
+  grad_out[6] = gt_boxes.new(#gt_boxes):zero()
+  grad_out[7] = gt_labels.new(#gt_labels):zero()
+
+  self:backward(input, grad_out)
 end
 

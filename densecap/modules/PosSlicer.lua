@@ -22,6 +22,12 @@ produces nil for the ground-truth, and we want to run the language model and
 box regression for all boxes.
 --]]
 
+function layer:__init()
+  parent.__init(self)
+  self.grad_features = torch.Tensor()
+  self.grad_gt_features = torch.Tensor()
+end
+
 function layer:updateOutput(input)
   local features = input[1]
   local gt_features = input[2]
@@ -38,11 +44,14 @@ end
 function layer:updateGradInput(input, gradOutput)
   local features = input[1]
   local gt_features = input[2]
+  self.grad_gt_features:resizeAs(gt_features):zero()
   if gt_features:nElement() == 0 then
-    self.gradInput = gradOutput
+    self.gradInput = {gradOutput, self.grad_gt_features}
   else
     local P = gt_features:size(1)
-    self.gradInput = gradOutput[{{1, P}}]
+    self.grad_features:resizeAs(features):zero()
+    self.grad_features[{{1, P}}]:copy(gradOutput)
+    self.gradInput = {self.grad_features, self.grad_gt_features}
   end
   return self.gradInput
 end

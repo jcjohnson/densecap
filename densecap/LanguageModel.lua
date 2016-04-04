@@ -104,6 +104,7 @@ end
 
 
 function LM:updateOutput(input)
+  self.recompute_backward = true
   local image_vectors = input[1]
   local gt_sequence = input[2]
     
@@ -215,10 +216,29 @@ function LM:sample(image_vectors)
 end
 
 
+function LM:updateGradInput(input, gradOutput)
+  if self.recompute_backward then
+    self:backward(input, gradOutput)
+  end
+  return self.gradInput
+end
+
+
+function LM:accGradParameters(input, gradOutput, scale)
+  if self.recompute_backward then
+    self:backward(input, gradOutput, scale)
+  end
+end
+
+
 function LM:backward(input, gradOutput, scale)
   assert(self._forward_sampled == false, 'cannot backprop through sampling')
-  input = {input[1], self._gt_with_start}
-  self.gradInput = self.net:backward(input, gradOutput, scale)
+  assert(scale == nil or scale == 1.0)
+  self.recompute_backward = false
+  local net_input = {input[1], self._gt_with_start}
+  self.gradInput = self.net:backward(net_input, gradOutput, scale)
+  self.gradInput[2] = input[2].new(#input[2]):zero()
+  return self.gradInput
 end
 
 
@@ -242,3 +262,4 @@ end
 function LM:clearState()
   self.net:clearState()
 end
+
