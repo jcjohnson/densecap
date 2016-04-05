@@ -24,5 +24,39 @@ function tests.sanityCheckTest()
   tester:assertlt(blob.average_score, 1.0, 'average score between 0 and 1')
 end
 
+function tests.evaluatorTest()
+  -- run short test on DenseCapEvaluator to make sure it doesn't crash or something
+  
+  local evaluator = eval_utils.DenseCaptioningEvaluator()
+
+  local B = 10
+  local M = 5
+  local logprobs = torch.randn(B,2)
+  local boxes = torch.rand(B,4)
+  local text = {"hello there", "how are you", "this is a string",
+               "this string is a bit longer", "short one", "another prediction", 
+               "this is the 7th item", "here is an item", "one more", "last prediction"}
+  local target_boxes = torch.rand(B,4)
+  local target_text = {"one ground truth", "another one", "short", "fourth gt", "how are you"}
+  -- add to evaluator
+  evaluator:addResult(logprobs, boxes, text, target_boxes, target_text)
+
+  local B = 10
+  local M = 5
+  local logprobs = torch.randn(B,2)
+  local boxes = torch.rand(B,4)
+  local text = {"hello there number two", "how are you", "this is a string",
+               "this string is a bit longer", "short one", "another prediction", 
+               "this is the 7th item", "blah is an item", "one more", "last prediction"}
+  local target_boxes = torch.rand(B,4)
+  local target_text = {"one ground truth", "one two three", "short", "fourth gt", "how are you"}
+  -- add again evaluator
+  evaluator:addResult(logprobs, boxes, text, target_boxes, target_text)
+
+  local results = evaluator:evaluate()
+  print(results)
+
+end
+
 tester:add(tests)
 tester:run()
