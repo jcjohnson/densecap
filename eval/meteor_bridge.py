@@ -10,8 +10,8 @@ import subprocess
 import threading
 
 # Assumes meteor-1.5.jar is in the same directory as meteor.py.  Change as needed.
-METEOR_JAR = 'meteor-1.5.jar'
 ABSPATH = os.path.dirname(os.path.abspath(__file__))
+METEOR_JAR = os.path.join(ABSPATH, 'meteor-1.5.jar')
 
 class Meteor(object):
 
@@ -51,23 +51,22 @@ class Meteor(object):
         self.lock.release()
 
 if __name__ == "__main__":
-    
-    assert(os.path.isfile(METEOR_JAR), 'you must have meteor-1.5.jar! Check README.md instructions in eval/ folder.')
 
-    import json
+    assert os.path.isfile(METEOR_JAR), 'you must have meteor-1.5.jar! Check README.md instructions in eval/ folder.'
 
     jobid = sys.argv[1] if len(sys.argv) >= 2 else ''
     INPUT_FILE = os.path.join(ABSPATH, 'input%s.json' % (jobid, ))
     OUTPUT_FILE = os.path.join(ABSPATH, 'output%s.json' % (jobid, ))    
 
     m = Meteor()
+    import json
     records = json.load(open(INPUT_FILE, 'r'))
-    scores = {}
-    for record_id, r in records.iteritems():
+    scores = []
+    for r in records:
         score = m._score(r['candidate'], r['references'])
-        scores[record_id] = score
+        scores.append(score)
 
     out = {}
     out['scores'] = scores
-    out['average_score'] = sum(scores.values()) / len(scores)
+    out['average_score'] = sum(scores) / len(scores)
     json.dump(out, open(OUTPUT_FILE, 'w'))

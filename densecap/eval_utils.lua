@@ -1,7 +1,13 @@
+--[[
+Utilities and function for evaluating the Dense Captioning metric, 
+which combines both object detection and captioning performance into one number.
+
+The sligthly gross part is that we want to use METEOR in our evaluation.
+--]]
+
 local box_utils = require 'densecap.box_utils'
 local utils = require 'densecap.utils'
 local eval_utils = {}
-
 
 local function python_eval(records, all_target_text, all_predict_text, id)
   

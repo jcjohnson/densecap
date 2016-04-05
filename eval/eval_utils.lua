@@ -6,21 +6,12 @@ local box_utils = require 'densecap.box_utils'
 local eval_utils = {}
 
 function eval_utils.score_captions(records)
-  --[[
-  METEOR scores caption candidates against references, both stored in records.
-  function takes a table of records, in form:
-    {'key': {'references':{'',..,''}, 'candidate':''}, ...}
-  and returns a blob table result in form:
-    {'scores': {'key' : score}, 'average_score': float}
-  --]]
-
   -- serialize records to json file
   utils.write_json('eval/input.json', records)
   -- invoke python process 
   os.execute('python eval/meteor_bridge.py')
   -- read out results
   local blob = utils.read_json('eval/output.json')
-
   return blob
 end
 
@@ -57,22 +48,28 @@ end
 
 ------------------------------------------------------------------------------
 
-local DenseCaptionEvaluator = torch.class('eval_utils.DenseCaptionEvaluator')
-function DenseCaptionEvaluator:__init(opt)
+local DenseCaptioningEvaluator = torch.class('DenseCaptioningEvaluator')
+function DenseCaptioningEvaluator:__init(opt)
   self.all_logprobs = {}
   self.records = {}
   self.n = 1
   self.npos = 0
-  self.id = opt.id
+  self.id = utils.getopt(opt, 'id', '')
 end
 
 -- boxes is (B x 4) are xcycwh, logprobs are (B x 2), target_boxes are (M x 4) also as xcycwh.
 -- these can be both on CPU or on GPU (they will be shipped to CPU if not already so)
 -- predict_text is length B list of strings, target_text is length M list of strings.
-function DenseCaptionEvaluator:addResult(logprobs, boxes, text, target_boxes, target_text)
+function DenseCaptioningEvaluator:addResult(logprobs, boxes, text, target_boxes, target_text)
 
-  boxes = box_utils.xcycwh_to_x1y1x2y2(boxes) -- convert to x1,y1,x2,y2
-  target_boxes = box_utils.xcycwh_to_x1y1x2y2(target_boxes) -- x1,y1,x2,y2
+  assert(logprobs:size(1) == boxes:size(1))
+  assert(logprobs:size(1) == #text)
+  assert(target_boxes:size(1) == #target_text)
+  assert(boxes:nDimension() == 2)
+
+  -- convert both boxes to x1y1x2y2 coordinate systems
+  boxes = box_utils.xcycwh_to_x1y1x2y2(boxes)
+  target_boxes = box_utils.xcycwh_to_x1y1x2y2(target_boxes)
 
   -- make sure we're on CPU
   boxes = boxes:float()
@@ -85,10 +82,9 @@ function DenseCaptionEvaluator:addResult(logprobs, boxes, text, target_boxes, ta
 
   -- 1. Sort detections by decreasing confidence
   local Y,IX = torch.sort(logprobs,1,true) -- true makes order descending
+  
   local nd = logprobs:size(1) -- number of detections
   local nt = merged_boxes:size(1) -- number of gt boxes
-  assert(boxes:nDimension() == 2)
-  
   local used = torch.zeros(nt)
   for d=1,nd do -- for each detection in descending order of confidence
     local ii = IX[d]
@@ -124,7 +120,7 @@ function DenseCaptionEvaluator:addResult(logprobs, boxes, text, target_boxes, ta
 
     -- record the best box, the overlap, and the fact that we need to score the language match
     local record = {}
-    record.ok = ok
+    record.ok = ok -- whether this prediction can be counted toward a true positive
     record.ov = ovmax
     record.candidate = text[ii]
     record.references = merged_text[jmax] -- will be nil if jmax stays -1
@@ -138,21 +134,19 @@ function DenseCaptionEvaluator:addResult(logprobs, boxes, text, target_boxes, ta
   table.insert(self.all_logprobs, Y:double()) -- inserting the sorted logprobs as double
 end
 
-function DenseCaptionEvaluator:evaluate(verbose)
+function DenseCaptioningEvaluator:evaluate(verbose)
   if verbose == nil then verbose = true end
-
   local min_overlaps = {0.3, 0.4, 0.5, 0.6, 0.7}
-  local min_scores = {0.05, 0.1, 0.15, 0.2, 0.25}
-  local score_type = 'METEOR'
+  local min_scores = {-1, 0.05, 0.1, 0.15, 0.2, 0.25}
 
   -- concatenate everything across all images
   local logprobs = torch.cat(self.all_logprobs, 1) -- concat all logprobs
   -- call python to evaluate all records and get their BLEU/METEOR scores
-  local lang_score
-  local score_blob = eval_utils.score_captions(self.records, self.id) -- replace in place (prev struct will be collected)
+  local blob = eval_utils.score_captions(self.records, self.id) -- replace in place (prev struct will be collected)
+  local scores = blob.scores -- scores is a list of scores, parallel to records
   collectgarbage()
   collectgarbage()
-  
+
   -- prints/debugging
   if verbose then
     for k=1,#self.records do
@@ -161,7 +155,7 @@ function DenseCaptionEvaluator:evaluate(verbose)
         local txtgt = ''
         assert(type(record.references) == "table")
         for kk,vv in pairs(record.references) do txtgt = txtgt .. vv .. '. ' end
-        print(string.format('IMG %d PRED: %s, GT: %s, OK: %d, OV: %f SCORE: %f', record.imgid, record.candidate, txtgt, record.ok, record.ov, record.scores[score_type]))
+        print(string.format('IMG %d PRED: %s, GT: %s, OK: %d, OV: %f SCORE: %f', record.imgid, record.candidate, txtgt, record.ok, record.ov, scores[k]))
       end  
     end
   end
@@ -187,7 +181,7 @@ function DenseCaptionEvaluator:evaluate(verbose)
           fp[i] = 1 -- nothing aligned to this predicted box in the ground truth
         else
           -- ok something aligned. Lets check if it aligned enough, and correctly enough
-          local score = r.scores[score_type]
+          local score = scores[ii]
           if r.ov >= min_overlap and r.ok == 1 and score > min_score then
             tp[i] = 1
           else
@@ -226,11 +220,11 @@ function DenseCaptionEvaluator:evaluate(verbose)
   local detmap = utils.average_values(det_results)
 
   -- lets get out of here
-  local results = {map = map, ap_breakdown = ap_results, detmap = detmap, det_breakdown = det_results, lang_score = lang_score}
+  local results = {map = map, ap_breakdown = ap_results, detmap = detmap, det_breakdown = det_results}
   return results
 end
 
-function DenseCaptionEvaluator:numAdded()
+function DenseCaptioningEvaluator:numAdded()
   return self.n - 1
 end
 
