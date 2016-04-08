@@ -53,6 +53,13 @@ function layer:__init()
 end
 
 
+function layer:clearState()
+  self.gradInput[1]:set()
+  self.gradInput[2]:set()
+  self.buffer:set()
+end
+
+
 function layer:updateOutput(input)
   local boxes, trans = input[1], input[2]
 

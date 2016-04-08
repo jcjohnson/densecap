@@ -15,7 +15,7 @@ local net_utils = require 'densecap.net_utils'
 local utils = require 'densecap.utils'
 
 
-local DenseCapModel, parent = torch.class('nn.DenseCapModel', 'nn.Module')
+local DenseCapModel, parent = torch.class('DenseCapModel', 'nn.Module')
 
 
 function DenseCapModel:__init(opt)
@@ -239,6 +239,28 @@ end
 
 
 --[[
+We naughtily override the module's getParameters method, and return:
+- params: Flattened parameters for the RPN and recognition network
+- grad_params: Flattened gradients for the RPN and recognition network
+- cnn_params: Flattened portion of the CNN parameters that will be fine-tuned
+- grad_cnn_params: Flattened gradients for the portion of the CNN that will
+  be fine-tuned.
+--]]
+function DenseCapModel:getParameters()
+  local cnn_params, grad_cnn_params = self.net:get(2):getParameters()
+  local fakenet = nn.Sequential()
+  fakenet:add(self.net:get(3))
+  fakenet:add(self.net:get(4))
+  local params, grad_params = fakenet:getParameters()
+  return params, grad_params, cnn_params, grad_cnn_params
+end
+
+
+function DenseCapModel:clearState()
+  self.net:clearState()
+end
+
+--[[
 Perform a (training-time) forward pass to compute output and loss,
 and a backward pass to compute gradients.
 
@@ -305,6 +327,10 @@ function DenseCapModel:forward_backward(data)
     end_box_reg_loss=end_box_reg_loss,
     captioning_loss=captioning_loss,
   }
+  losses.total_loss = 0
+  for k, v in pairs(losses) do
+    losses.total_loss = losses.total_loss + v
+  end
 
   -- Run the model backward
   local grad_out = {}
@@ -320,4 +346,3 @@ function DenseCapModel:forward_backward(data)
 
   return losses
 end
-

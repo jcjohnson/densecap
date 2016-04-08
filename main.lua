@@ -11,6 +11,7 @@ require 'optim'
 require 'image'
 require 'lfs'
 require 'nn'
+local cjson = require 'cjson'
 
 require 'densecap.DataLoader'
 require 'densecap.DenseCapModel'
@@ -19,12 +20,6 @@ local utils = require 'densecap.utils'
 local opts = require 'opts'
 local models = require 'models'
 local eval_utils = require 'densecap.eval_utils'
-
--- local LSTM = require 'LSTM'
--- local utils = require 'utils'
--- local voc_utils = require 'voc_utils'
--- local cjson = require 'cjson' -- http://www.kyne.com.au/~mark/software/lua-cjson.php
--- require 'vis_utils'
 
 -------------------------------------------------------------------------------
 -- Initializations
@@ -46,15 +41,17 @@ end
 local loader = DataLoader(opt)
 opt.seq_length = loader:getSeqLength()
 opt.vocab_size = loader:getVocabSize()
+opt.idx_to_token = loader.info.idx_to_token
 
 -- initialize the DenseCap model object
-local model = models.setup(opt)
+local dtype = 'torch.CudaTensor'
+local model = models.setup(opt):type(dtype)
 
 -- get the parameters vector
 local params, grad_params, cnn_params, cnn_grad_params = model:getParameters()
 print('total number of parameters in net: ', grad_params:nElement())
 print('total number of parameters in CNN: ', cnn_grad_params:nElement())
-model.nets.lm_model:shareClones() -- TOOD: sub in single LSTM block module, get rid of this line
+-- model.nets.lm_model:shareClones() -- TOOD: sub in single LSTM block module, get rid of this line
 
 -------------------------------------------------------------------------------
 -- Loss function
@@ -74,7 +71,10 @@ local function lossFun()
   local timer = torch.Timer()
   local info
   local data = {}
-  data.images, data.target_boxes, data.target_seqs, info, data.region_proposals = loader:getBatch()
+  data.image, data.gt_boxes, data.gt_labels, info, data.region_proposals = loader:getBatch()
+  for k, v in pairs(data) do
+    data[k] = v:type(dtype)
+  end
   if opt.timing then cutorch.synchronize() end
   local getBatch_time = timer:time().real
 
@@ -89,7 +89,7 @@ local function lossFun()
     model.dump_vars = true
   end
   local losses, stats = model:forward_backward(data)
-  stats.times['getBatch'] = getBatch_time -- this is gross but ah well
+  -- stats.times['getBatch'] = getBatch_time -- this is gross but ah well
 
   -- Apply L2 regularization
   if opt.weight_decay > 0 then
@@ -104,11 +104,13 @@ local function lossFun()
     end
   end
 
+  --[[
   if iter % 25 == 0 then
     local boxes, scores, seq = model:forward_test(data.images)
     local txt = loader:decodeSequence(seq)
     print(txt)
   end
+  --]]
   
   --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   -- Visualization/Logging code
@@ -119,6 +121,7 @@ local function lossFun()
     loss_history[iter] = losses_copy
   end
 
+  --[[
   if model.dump_vars then
     -- do a test-time forward pass
     -- this shouldn't affect our gradients for this iteration
@@ -136,6 +139,7 @@ local function lossFun()
     end
     -- snapshotProgress(stats.vars, opt.id)
   end
+  --]]
 
   return losses, stats
 end
@@ -151,7 +155,8 @@ local function eval_split(split, max_images)
 
   -- TODO: we're about to reset the iterator, which means that for training data
   -- we would lose our place in the dataset as we're iterating around. 
-  -- This only comes up if we ever wanted to eval over training data. Worry about later.
+  -- This only comes up if we ever wanted to eval over training data.
+  -- Worry about later.
   assert(split == 1, 'train evaluation is tricky for now. todo.')
   loader:resetIterator(split)
 
@@ -221,14 +226,17 @@ local cnn_optim_state = {}
 local best_val_score = -1
 while true do  
 
-  -- compute the gradient
+  -- Compute loss and gradient
   local losses, stats = lossFun()
 
-  -- perform parameter update on the model
-  adam(params, grad_params, opt.learning_rate, opt.optim_beta1, opt.optim_beta2, opt.optim_epsilon, optim_state)
-  -- maybe also perform parameter update on the CNN
+  -- Parameter update
+  adam(params, grad_params, opt.learning_rate, opt.optim_beta1,
+       opt.optim_beta2, opt.optim_epsilon, optim_state)
+
+  -- Make a step on the CNN if finetuning
   if opt.finetune_cnn_after >= 0 and iter >= opt.finetune_cnn_after then
-    adam(cnn_params, cnn_grad_params, opt.learning_rate, opt.optim_beta1, opt.optim_beta2, opt.optim_epsilon, cnn_optim_state)
+    adam(cnn_params, cnn_grad_params, opt.learning_rate,
+         opt.optim_beta1, opt.optim_beta2, opt.optim_epsilon, cnn_optim_state)
   end
 
   -- print loss and timing/benchmarks
@@ -239,8 +247,8 @@ while true do
   if ((opt.eval_first_iteration == 1 or iter > 0) and iter % opt.save_checkpoint_every == 0) or (iter+1 == opt.max_iters) then
 
     -- evaluate validation performance
-    local results = eval_split(1, opt.val_images_use) -- 1 = validation
-    results_history[iter] = results
+    -- local results = eval_split(1, opt.val_images_use) -- 1 = validation
+    -- results_history[iter] = results
 
     -- serialize a json file that has all info except the model
     local checkpoint = {}
@@ -257,6 +265,10 @@ while true do
     print('wrote ' .. opt.checkpoint_path .. '.json')
 
     -- add the model and save it (only if there was improvement in map)
+    checkpoint.model = model
+    model:clearState()
+    torch.save(opt.checkpoint_path, checkpoint)
+    --[[
     local score = results.ap.map
     if score > best_val_score then
       best_val_score = score
@@ -264,16 +276,18 @@ while true do
       torch.save(opt.checkpoint_path, checkpoint)
       print('wrote ' .. opt.checkpoint_path)
     end
+    --]]
   end
     
   -- stopping criterions
   iter = iter + 1
-  if iter % 33 == 0 then collectgarbage() end -- good idea to do this once in a while
+  -- Collect garbage every so often
+  if iter % 33 == 0 then collectgarbage() end
   if loss0 == nil then loss0 = losses.total_loss end
   if losses.total_loss > loss0 * 100 then
     print('loss seems to be exploding, quitting.')
     break
   end
-  if opt.max_iters > 0 and iter >= opt.max_iters then break end -- stopping criterion
+  if opt.max_iters > 0 and iter >= opt.max_iters then break end
 end
 

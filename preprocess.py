@@ -305,6 +305,7 @@ def split_filter_captions(data, max_token_length, tokens_type, verbose=True):
     if verbose and (i + 1) % 2000 == 0:
       print 'Splitting tokens in image %d / %d' % (i + 1, len(data))
     regions_per_image = 0
+    img_kept, img_removed = 0, 0
     for region in img['regions']:
 
       # create tokens array
@@ -319,12 +320,15 @@ def split_filter_captions(data, max_token_length, tokens_type, verbose=True):
       if max_token_length > 0 and len(tokens) <= max_token_length:
         region['tokens'] = tokens
         captions_kept += 1
+        img_kept += 1
         regions_per_image = regions_per_image + 1
       else:
         region['tokens'] = None
         captions_removed += 1
+        img_removed += 1
     
     if regions_per_image == 0:
+      print 'kept %d, removed %d' % (img_kept, img_removed)
       assert False, 'DANGER, some image has no valid regions. Not super sure this doesnt cause bugs. Think about more if it comes up'
 
   if verbose:
@@ -345,11 +349,16 @@ def encode_splits(data, split_data):
 
 
 def filter_images(data, split_data):
-  """ Keep only images that are in some split """
+  """ Keep only images that are in some split and have some captions """
   all_split_ids = set()
   for split_name, ids in split_data.iteritems():
     all_split_ids.update(ids)
-  return [img for img in data if img['id'] in all_split_ids]
+  new_data = []
+  for img in data:
+    keep = img['id'] in all_split_ids and len(img['regions']) > 0
+    if keep:
+      new_data.append(img)
+  return new_data
 
 
 def main(args):
@@ -440,10 +449,10 @@ if __name__ == '__main__':
 
   # OPTIONS
   parser.add_argument('--image_size',
-      default=512, type=int,
+      default=720, type=int,
       help='Size of longest edge of preprocessed images')  
   parser.add_argument('--max_token_length',
-      default=25, type=int,
+      default=15, type=int,
       help="Set to 0 to disable filtering")
   parser.add_argument('--min_token_instances',
       default=15, type=int,

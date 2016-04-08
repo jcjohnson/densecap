@@ -15,9 +15,7 @@ local box_utils = require 'densecap.box_utils'
 local utils = require 'densecap.utils'
 
 
---------------------------------------------------------------------------------
 --[[
-
 A LocalizationLayer wraps up all of the complexities of detection regions and
 using a spatial transformer to attend to their features. Used on its own, it can
 be used for learnable region proposals; it can also be plugged into larger modules
@@ -193,6 +191,12 @@ function layer:reset_stats()
   self.stats.losses = {}
   self.stats.times = {}
   self.stats.vars = {}
+end
+
+
+function layer:clearState()
+  self.timer = nil
+  -- self.nets.rpn:clearState()
 end
 
 

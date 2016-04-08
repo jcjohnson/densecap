@@ -263,3 +263,8 @@ function LM:clearState()
   self.net:clearState()
 end
 
+
+function LM:parameters()
+  return self.net:parameters()
+end
+
