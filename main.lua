@@ -104,13 +104,11 @@ local function lossFun()
     end
   end
 
-  --[[
+  
   if iter % 25 == 0 then
-    local boxes, scores, seq = model:forward_test(data.images)
-    local txt = loader:decodeSequence(seq)
-    print(txt)
+    local boxes, scores, seq = model:forward_test(data.image)
+    print(seq)
   end
-  --]]
   
   --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   -- Visualization/Logging code

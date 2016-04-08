@@ -16,6 +16,13 @@ function DataLoader:__init(opt)
   self.info = utils.read_json(self.json_file)
   self.vocab_size = utils.count_keys(self.info.idx_to_token)
 
+  -- Convert keys in idx_to_token from string to integer
+  local idx_to_token = {}
+  for k, v in pairs(self.info.idx_to_token) do
+    idx_to_token[tonumber(k)] = v
+  end
+  self.info.idx_to_token = idx_to_token
+
   -- open the hdf5 file
   print('DataLoader loading h5 file: ', self.h5_file)
   self.h5_file = hdf5.open(self.h5_file, 'r')

@@ -174,6 +174,37 @@ function DenseCapModel:evaluate()
 end
 
 
+--[[
+Run the model forward.
+
+Input:
+- image: Pixel data for a single image of shape (1, 3, H, W)
+
+After running the model forward, we will process N regions from the
+input image. At training time we have access to the ground-truth regions
+for that image, and assume that there are P ground-truth regions. We assume
+that the language model has a vocabulary of V elements (including the END
+token) and that all captions have been padded to a length of L.
+
+Output: A table of
+- objectness_scores: Array of shape (N, 1) giving (final) objectness scores
+  for boxes.
+- pos_roi_boxes: Array of shape (P, 4) at training time and (N, 4) at test-time
+  giving the positions of RoI boxes in (xc, yc, w, h) format.
+- final_box_trans: Array of shape (P, 4) at training time and (N, 4) at
+  test-time giving the transformations applied on top of the region proposal
+  boxes by the final box regression.
+- final_boxes: Array of shape (P, 4) at training time and (N, 4) at test-time
+  giving the coordinates of the final output boxes, in (xc, yc, w, h) format.
+- lm_output: At training time, an array of shape (P, L+2, V) giving log
+  probabilities (the +2 is two extra time steps for CNN input and END token).
+  At test time, an array of shape (N, L) where each element is an integer in
+  the range [1, V] giving sampled captions.
+- gt_boxes: At training time, an array of shape (P, 4) giving ground-truth
+  boxes corresponding to the sampled positives. At test time, an empty tensor.
+- gt_labels: At training time, an array of shape (P, L) giving ground-truth
+  sequences for sampled positives. At test-time, and empty tensor.
+--]]
 function DenseCapModel:updateOutput(input)
   -- Make sure the input is (1, 3, H, W)
   assert(input:dim() == 4 and input:size(1) == 1 and input:size(2) == 3)
@@ -204,6 +235,29 @@ function DenseCapModel:updateOutput(input)
   end
 
   return self.output
+end
+
+
+--[[
+Run a test-time forward pass, plucking out only the relevant outputs.
+
+Input: Tensor of shape (1, 3, H, W) giving pixels for an input image.
+
+Returns:
+- final_boxes: Tensor of shape (N, 4) giving coordinates of output boxes
+  in (xc, yc, w, h) format.
+- objectness_scores: Tensor of shape (N, 1) giving objectness scores of
+  those boxes.
+- captions: Array of length N giving output captions, decoded as strings.
+--]]
+function DenseCapModel:forward_test(input)
+  self:evaluate()
+  local output = self:forward(input)
+  local final_boxes = output[4]
+  local objectness_scores = output[1]
+  local captions = output[5]
+  local captions = self.nets.language_model:decodeSequence(captions)
+  return final_boxes, objectness_scores, captions
 end
 
 
