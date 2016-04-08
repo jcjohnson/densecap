@@ -19,7 +19,7 @@ require 'densecap.optim_updates'
 local utils = require 'densecap.utils'
 local opts = require 'opts'
 local models = require 'models'
-local eval_utils = require 'densecap.eval_utils'
+local eval_utils = require 'eval.eval_utils'
 
 -------------------------------------------------------------------------------
 -- Initializations
@@ -160,7 +160,7 @@ local function eval_split(split, max_images)
   loader:resetIterator(split)
 
   -- instantiate an evaluator class
-  local evaluator = DenseCaptionEvaluator({id = opt.id})
+  local evaluator = eval_utils.DenseCaptionEvaluator({id = opt.id})
 
   local counter = 0
   local all_losses = {}
@@ -187,7 +187,7 @@ local function eval_split(split, max_images)
 
     seq_text = loader:decodeSequence(seq) -- translate to text
     target_cls_text = loader:decodeSequence(data.target_cls:transpose(1,2):contiguous())
-    evaluator:addResult(info, boxes, logprobs, data.target_boxes, target_cls_text, seq_text)
+    evaluator:addResult(logprobs, boxes, seq_text, data.target_boxes, target_cls_text)
   
     if boxes then
       print(string.format('processed image %s (%d/%d) of split %d, detected %d regions.',
