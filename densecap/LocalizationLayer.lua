@@ -196,7 +196,7 @@ end
 
 function layer:clearState()
   self.timer = nil
-  -- self.nets.rpn:clearState()
+  self.nets.rpn:clearState()
 end
 
 

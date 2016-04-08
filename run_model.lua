@@ -2,9 +2,6 @@ require 'torch'
 require 'nn'
 require 'image'
 
-require 'cunn'
-require 'cudnn'
-
 require 'densecap.DenseCapModel'
 local utils = require 'densecap.utils'
 local box_utils = require 'densecap.box_utils'
@@ -37,10 +34,13 @@ cmd:option('-image_size', 720)
 cmd:option('-num_to_draw', 10)
 cmd:option('-text_size', 1)
 cmd:option('-box_width', 2)
+
+cmd:option('-gpu', 0)
+cmd:option('-use_cudnn', 1)
 local opt = cmd:parse(arg)
 
 
-function run_image(model, img_path, opt)
+function run_image(model, img_path, opt, dtype)
   -- Load, resize, and preprocess image
   local img = image.load(img_path, 3)
   img = image.scale(img, opt.image_size):float()
@@ -52,7 +52,7 @@ function run_image(model, img_path, opt)
   img_caffe:add(-1, vgg_mean)
 
   -- Run model, and keep only the top detections
-  local boxes, scores, captions = model:forward_test(img_caffe:cuda())
+  local boxes, scores, captions = model:forward_test(img_caffe:type(dtype))
   local num_boxes = math.min(opt.num_to_draw, boxes:size(1))
   boxes = boxes[{{1, num_boxes}}]
   scores = scores[{{1, num_boxes}}]
@@ -79,14 +79,31 @@ function run_image(model, img_path, opt)
   return img_out, json_struct
 end
 
+-- Figure out datatypes
+local dtype = 'torch.FloatTensor'
+local use_cudnn = false
+if opt.gpu >= 0 then
+  require 'cutorch'
+  require 'cunn'
+  cutorch.setDevice(opt.gpu + 1)
+  dtype = 'torch.CudaTensor'
+  if opt.use_cudnn == 1 then
+    require 'cudnn'
+    use_cudnn = true
+  end
+end
 
--- First load the model
+-- Load the model, and cast to the right type
 local checkpoint = torch.load(opt.checkpoint)
 local model = checkpoint.model
+model:type(dtype)
+if use_cudnn then
+  cudnn.convert(model.net, cudnn)
+end
 model:evaluate()
 
 if opt.input_image ~= '' then
-  local img_out, json_struct = run_image(model, opt.input_image, opt)
+  local img_out, json_struct = run_image(model, opt.input_image, opt, dtype)
   if opt.save_images == 1 then
     local img_out_path = paths.concat(opt.output_dir, paths.basename(opt.input_image))
     image.save(img_out_path, img_out)
@@ -100,7 +117,7 @@ if opt.input_dir ~= '' then
   for fn in paths.files(opt.input_dir) do
     if string.sub(fn, 1, 1) ~= '.' then
       local img_in_path = paths.concat(opt.input_dir, fn)
-      local img_out, json_struct = run_image(model, img_in_path, opt)
+      local img_out, json_struct = run_image(model, img_in_path, opt, dtype)
       if opt.save_images == 1 then
         local img_out_path = paths.concat(opt.output_dir, fn)
         image.save(img_out_path, img_out)

@@ -103,12 +103,13 @@ local function lossFun()
       all_losses[k][iter] = v
     end
   end
-
   
+  --[[
   if iter % 25 == 0 then
     local boxes, scores, seq = model:forward_test(data.image)
     print(seq)
   end
+  --]]
   
   --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   -- Visualization/Logging code
@@ -262,10 +263,26 @@ while true do
     file:close()
     print('wrote ' .. opt.checkpoint_path .. '.json')
 
-    -- add the model and save it (only if there was improvement in map)
+    -- TODO: only save checkpoint if there is an improvement in mAP?
     checkpoint.model = model
+
+    -- We want all checkpoints to be CPU compatible, so cast to float and
+    -- get rid of cuDNN convolutions before saving
     model:clearState()
+    model:float()
+    if cudnn then
+      cudnn.convert(model.net, nn)
+      cudnn.convert(model.nets.localization_layer.nets.rpn, nn)
+    end
     torch.save(opt.checkpoint_path, checkpoint)
+
+    -- Now go back to CUDA and cuDNN
+    model:cuda()
+    if cudnn then
+      cudnn.convert(model.net, cudnn)
+      cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)
+    end
+
     --[[
     local score = results.ap.map
     if score > best_val_score then
