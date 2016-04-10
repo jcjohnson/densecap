@@ -39,8 +39,11 @@ class Meteor(object):
         self.meteor_p.stdin.write(w)
         r = self.meteor_p.stdout.readline().strip()
         score = float(r)
-        r = self.meteor_p.stdout.readline().strip()
-        score = float(r) # have to read out twice
+        # I don't know why we were reading out twice? That doesn't work
+        # r = self.meteor_p.stdout.readline().strip()
+        # print 'got second line of EVAL results:'
+        # score = float(r) # have to read out twice
+        # print r, score
         self.lock.release()
         return score
  

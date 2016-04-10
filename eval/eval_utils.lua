@@ -124,6 +124,8 @@ function DenseCaptioningEvaluator:addResult(logprobs, boxes, text, target_boxes,
     record.ov = ovmax
     record.candidate = text[ii]
     record.references = merged_text[jmax] -- will be nil if jmax stays -1
+    -- Replace nil with empty table to prevent crash in meteor bridge
+    if record.references == nil then record.references = {} end
     record.imgid = self.n
     table.insert(self.records, record)
   end
