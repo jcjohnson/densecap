@@ -2,7 +2,7 @@
 local eval_utils = require 'eval.eval_utils'
 local utils = require 'densecap.utils'
 
-local tests = {}
+local tests = torch.TestSuite()
 local tester = torch.Tester()
 
 function tests.sanityCheckTest()
