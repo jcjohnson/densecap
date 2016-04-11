@@ -89,8 +89,6 @@ local function lossFun()
     model.dump_vars = true
   end
   local losses, stats = model:forward_backward(data)
-  stats = {}
-  stats.data = data
   -- stats.times['getBatch'] = getBatch_time -- this is gross but ah well
 
   -- Apply L2 regularization
@@ -270,35 +268,33 @@ while true do
     file:close()
     print('wrote ' .. opt.checkpoint_path .. '.json')
 
-    -- TODO: only save checkpoint if there is an improvement in mAP?
-    checkpoint.model = model
-
-    -- We want all checkpoints to be CPU compatible, so cast to float and
-    -- get rid of cuDNN convolutions before saving
-    model:clearState()
-    model:float()
-    if cudnn then
-      cudnn.convert(model.net, nn)
-      cudnn.convert(model.nets.localization_layer.nets.rpn, nn)
-    end
-    torch.save(opt.checkpoint_path, checkpoint)
-
-    -- Now go back to CUDA and cuDNN
-    model:cuda()
-    if cudnn then
-      cudnn.convert(model.net, cudnn)
-      cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)
-    end
-
-    --[[
-    local score = results.ap.map
-    if score > best_val_score then
-      best_val_score = score
+    -- Only save t7 checkpoint if there is an improvement in mAP
+    if results.ap.map > best_val_score then
+      best_val_score = results.ap.map
       checkpoint.model = model
+
+      -- We want all checkpoints to be CPU compatible, so cast to float and
+      -- get rid of cuDNN convolutions before saving
+      model:clearState()
+      model:float()
+      if cudnn then
+        cudnn.convert(model.net, nn)
+        cudnn.convert(model.nets.localization_layer.nets.rpn, nn)
+      end
       torch.save(opt.checkpoint_path, checkpoint)
       print('wrote ' .. opt.checkpoint_path)
+
+      -- Now go back to CUDA and cuDNN
+      model:cuda()
+      if cudnn then
+        cudnn.convert(model.net, cudnn)
+        cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)
+      end
+
+      -- All of that nonsense causes the parameter vectors to be reallocated, so
+      -- we need to reallocate the params and grad_params vectors.
+      params, grad_params, cnn_params, cnn_grad_params = model:getParameters()
     end
-    --]]
   end
     
   -- stopping criterions
@@ -307,9 +303,6 @@ while true do
   if iter % 33 == 0 then collectgarbage() end
   if loss0 == nil then loss0 = losses.total_loss end
   if losses.total_loss > loss0 * 100 then
-    model:clearState()
-    torch.save('data/exploding_model.t7', model)
-    torch.save('data/exploding_data.t7', stats.data)
     print('loss seems to be exploding, quitting.')
     break
   end
