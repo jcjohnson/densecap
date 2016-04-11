@@ -220,8 +220,11 @@ function DenseCapModel:updateOutput(input)
 
   -- At test-time, apply NMS to final boxes
   if not self.train and self.opt.final_nms_thresh > 0 then
+    -- We need to apply the same NMS mask to the final boxes, their
+    -- objectness scores, and the output from the language model
     local final_boxes_float = self.output[4]:float()
     local class_scores_float = self.output[1]:float()
+    local lm_output_float = self.output[5]:float()
     local boxes_scores = torch.FloatTensor(final_boxes_float:size(1), 5)
     local boxes_x1y1x2y2 = box_utils.xcycwh_to_x1y1x2y2(final_boxes_float)
     boxes_scores[{{}, {1, 4}}]:copy(boxes_x1y1x2y2)
@@ -229,10 +232,12 @@ function DenseCapModel:updateOutput(input)
     local idx = box_utils.nms(boxes_scores, self.opt.final_nms_thresh)
     self.output[4] = final_boxes_float:index(1, idx):typeAs(self.output[4])
     self.output[1] = class_scores_float:index(1, idx):typeAs(self.output[1])
+    self.output[5] = lm_output_float:index(1, idx):typeAs(self.output[5])
 
     -- TODO: In the old StnDetectionModel we also applied NMS to the
     -- variables dumped by the LocalizationLayer. Do we want to do that?
   end
+
 
   return self.output
 end

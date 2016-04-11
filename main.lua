@@ -160,7 +160,7 @@ local function eval_split(split, max_images)
   loader:resetIterator(split)
 
   -- instantiate an evaluator class
-  local evaluator = eval_utils.DenseCaptionEvaluator({id = opt.id})
+  local evaluator = DenseCaptioningEvaluator({id = opt.id})
 
   local counter = 0
   local all_losses = {}
@@ -169,7 +169,10 @@ local function eval_split(split, max_images)
 
     -- fetch a batch of val data
     local data = {}
-    data.images, data.target_boxes, data.target_cls, info, data.region_proposals = loader:getBatch{ split = split, iterate = true}
+    data.image, data.gt_boxes, data.gt_labels, info, data.region_proposals = loader:getBatch{ split = split, iterate = true}
+    for k, v in pairs(data) do
+      data[k] = v:type(dtype)
+    end
     local info = info[1] -- strip, since we assume only one image in batch for now
 
     -- evaluate the val loss function
@@ -181,13 +184,15 @@ local function eval_split(split, max_images)
 
     -- if we are doing object detection also forward the model in test mode to get predictions and do mAP eval
     local boxes, logprobs, seq
-    data.target_boxes = data.target_boxes[1]
-    data.target_cls = data.target_cls[1]
-    boxes, logprobs, seq = model:forward_test(data.images, {clip_final_boxes=opt.clip_final_boxes}, data.region_proposals)
+    data.gt_boxes = data.gt_boxes[1]
+    data.gt_labels = data.gt_labels[1]
+    boxes, logprobs, captions = model:forward_test(data.image)
 
-    seq_text = loader:decodeSequence(seq) -- translate to text
-    target_cls_text = loader:decodeSequence(data.target_cls:transpose(1,2):contiguous())
-    evaluator:addResult(logprobs, boxes, seq_text, data.target_boxes, target_cls_text)
+    -- seq_text = loader:decodeSequence(seq) -- translate to text
+    -- target_cls_text = loader:decodeSequence(data.target_cls:transpose(1,2):contiguous())
+    -- local gt_captions = loader:decodeSequence(data.gt_labels:transpose(1, 2):contiguous())
+    local gt_captions = model.nets.language_model:decodeSequence(data.gt_labels)
+    evaluator:addResult(logprobs, boxes, captions, data.gt_boxes, gt_captions)
   
     if boxes then
       print(string.format('processed image %s (%d/%d) of split %d, detected %d regions.',
@@ -246,8 +251,8 @@ while true do
   if ((opt.eval_first_iteration == 1 or iter > 0) and iter % opt.save_checkpoint_every == 0) or (iter+1 == opt.max_iters) then
 
     -- evaluate validation performance
-    -- local results = eval_split(1, opt.val_images_use) -- 1 = validation
-    -- results_history[iter] = results
+    local results = eval_split(1, opt.val_images_use) -- 1 = validation
+    results_history[iter] = results
 
     -- serialize a json file that has all info except the model
     local checkpoint = {}

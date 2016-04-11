@@ -61,7 +61,6 @@ end
 -- these can be both on CPU or on GPU (they will be shipped to CPU if not already so)
 -- predict_text is length B list of strings, target_text is length M list of strings.
 function DenseCaptioningEvaluator:addResult(logprobs, boxes, text, target_boxes, target_text)
-
   assert(logprobs:size(1) == boxes:size(1))
   assert(logprobs:size(1) == #text)
   assert(target_boxes:size(1) == #target_text)
@@ -202,7 +201,7 @@ function DenseCaptioningEvaluator:evaluate(verbose)
       local apn = 0
       for t=0,1,0.01 do
         local mask = torch.ge(rec, t):double()
-        local prec_masked = torch.cmul(prec, mask)
+        local prec_masked = torch.cmul(prec:double(), mask)
         local p = torch.max(prec_masked)
         ap = ap + p
         apn = apn + 1

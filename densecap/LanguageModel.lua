@@ -91,7 +91,7 @@ function LM:decodeSequence(seq)
     local caption = ''
     for t = 1, T do
       local idx = seq[{i, t}]
-      if idx == self.END_TOKEN then break end
+      if idx == self.END_TOKEN or idx == 0 then break end
       if t > 1 then
         caption = caption .. delimiter
       end
