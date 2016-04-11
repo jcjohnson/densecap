@@ -34,12 +34,25 @@ function crit:__init(w)
   self.target_transforms = nil
   self.smooth_l1 = nn.SmoothL1Criterion()
   self.gradInput = {torch.Tensor(), torch.Tensor()}
+  self.mask = nil
 end
 
 
 function crit:updateOutput(input, target_boxes)
   local anchor_boxes, transforms = unpack(input)
   self.target_transforms = self.invert_transform:forward{anchor_boxes, target_boxes}
+
+  -- DIRTY DIRTY HACK: Ignore loss for boxes whose transforms are too big
+  self.mask = torch.gt(torch.abs(self.target_transforms):max(2), 10)
+  self.mask = self.mask:expandAs(self.target_transforms)
+  local mask_sum = self.mask:sum() / 4
+  if mask_sum > 0 then
+    local msg = 'WARNING: Ignoring %d boxes in BoxRegressionCriterion'
+    print(string.format(msg, mask_sum))
+    transforms[self.mask] = 0
+    self.target_transforms[self.mask] = 0
+  end
+
   self.output = self.w * self.smooth_l1:forward(transforms, self.target_transforms)
   return self.output
 end
