@@ -461,6 +461,18 @@ function layer:_forward_train(input)
                                 self.pos_anchors, self.pos_target_boxes}
   end)
 
+  -- DIRTY DIRTY HACK: To prevent the loss from blowing up, replace boxes
+  -- with huge pos_trans_targets with ground-truth
+  local max_trans = torch.abs(self.pos_trans_targets):max(2)
+  local max_trans_mask = torch.gt(max_trans, 10):expandAs(self.pos_trans_targets)
+  local mask_sum = max_trans_mask:sum() / 4
+  if mask_sum > 0 then
+    local msg = 'WARNING: Masking out %d boxes in LocalizationLayer'
+    print(string.format(msg, mask_sum))
+    self.pos_trans[max_trans_mask] = 0
+    self.pos_trans_targets[max_trans_mask] = 0
+  end
+
   -- Compute RPN box regression loss
   self:timeit('box_reg_loss:forward', function()
     local crit = self.nets.box_reg_crit

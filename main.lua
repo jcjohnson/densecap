@@ -89,6 +89,8 @@ local function lossFun()
     model.dump_vars = true
   end
   local losses, stats = model:forward_backward(data)
+  stats = {}
+  stats.data = data
   -- stats.times['getBatch'] = getBatch_time -- this is gross but ah well
 
   -- Apply L2 regularization
@@ -305,6 +307,9 @@ while true do
   if iter % 33 == 0 then collectgarbage() end
   if loss0 == nil then loss0 = losses.total_loss end
   if losses.total_loss > loss0 * 100 then
+    model:clearState()
+    torch.save('data/exploding_model.t7', model)
+    torch.save('data/exploding_data.t7', stats.data)
     print('loss seems to be exploding, quitting.')
     break
   end
