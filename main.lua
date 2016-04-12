@@ -51,7 +51,6 @@ local model = models.setup(opt):type(dtype)
 local params, grad_params, cnn_params, cnn_grad_params = model:getParameters()
 print('total number of parameters in net: ', grad_params:nElement())
 print('total number of parameters in CNN: ', cnn_grad_params:nElement())
--- model.nets.lm_model:shareClones() -- TOOD: sub in single LSTM block module, get rid of this line
 
 -------------------------------------------------------------------------------
 -- Loss function
