@@ -98,7 +98,7 @@ function layer:__init(opt)
   self.nets.box_sampler_helper = nn.BoxSamplerHelper{
                                     batch_size=opt.sampler_batch_size,
                                     low_thresh=opt.sampler_low_thresh,
-                                    high_thresh=opt.smapler_high_thresh,
+                                    high_thresh=opt.sampler_high_thresh,
                                  }
 
   -- Interpolates conv features for each RoI
