@@ -17,7 +17,7 @@ cmd:option('-data_json', '', 'The JSON file to load data from; optional.')
 cmd:option('-gpu', 0, 'The GPU to use; set to -1 for CPU')
 cmd:option('-use_cudnn', 1, 'Whether to use cuDNN backend in GPU mode.')
 cmd:option('-split', 'val', 'Which split to evaluate; either val or test.')
-cmd:option('-max_images', -1 'How many images to evaluate; -1 for whole split')
+cmd:option('-max_images', -1, 'How many images to evaluate; -1 for whole split')
 local opt = cmd:parse(arg)
 
 
