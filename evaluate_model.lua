@@ -13,7 +13,7 @@ Evaluate a trained DenseCap model by running it on a split on the data.
 local cmd = torch.CmdLine()
 cmd:option('-checkpoint', 'data/checkpoint.t7', 'The checkpoint to evaluate')
 cmd:option('-data_h5', '', 'The HDF5 file to load data from; optional.')
-cmd:option('-data_json', '' 'The JSON file to load data from; optional.')
+cmd:option('-data_json', '', 'The JSON file to load data from; optional.')
 cmd:option('-gpu', 0, 'The GPU to use; set to -1 for CPU')
 cmd:option('-use_cudnn', 1, 'Whether to use cuDNN backend in GPU mode.')
 cmd:option('-split', 'val', 'Which split to evaluate; either val or test.')
