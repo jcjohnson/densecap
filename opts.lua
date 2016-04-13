@@ -58,7 +58,7 @@ function M.parse(arg)
   -- Misc
   cmd:option('-id', '', 'an id identifying this run/job. can be used in cross-validation.')
   cmd:option('-seed', 123, 'random number generator seed to use')
-  cmd:option('-gpuid', 0, 'which gpu to use. -1 = use CPU')
+  cmd:option('-gpu', 0, 'which gpu to use. -1 = use CPU')
   cmd:option('-timing', false, 'whether to time parts of the net')
   cmd:option('-dump_all_losses', 0)
   cmd:option('-clip_final_boxes', 1,
