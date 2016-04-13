@@ -132,7 +132,6 @@ local function pluck_boxes(ix, boxes, text)
   return new_boxes, new_text
 end
 
-------------------------------------------------------------------------------
 
 local DenseCaptioningEvaluator = torch.class('DenseCaptioningEvaluator')
 function DenseCaptioningEvaluator:__init(opt)
@@ -242,7 +241,8 @@ function DenseCaptioningEvaluator:evaluate(verbose)
         local txtgt = ''
         assert(type(record.references) == "table")
         for kk,vv in pairs(record.references) do txtgt = txtgt .. vv .. '. ' end
-        print(string.format('IMG %d PRED: %s, GT: %s, OK: %d, OV: %f SCORE: %f', record.imgid, record.candidate, txtgt, record.ok, record.ov, scores[k]))
+        print(string.format('IMG %d PRED: %s, GT: %s, OK: %d, OV: %f SCORE: %f',
+              record.imgid, record.candidate, txtgt, record.ok, record.ov, scores[k]))
       end  
     end
   end

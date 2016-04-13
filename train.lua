@@ -17,7 +17,7 @@ require 'densecap.DataLoader'
 require 'densecap.DenseCapModel'
 require 'densecap.optim_updates'
 local utils = require 'densecap.utils'
-local opts = require 'opts'
+local opts = require 'train_opts'
 local models = require 'models'
 local eval_utils = require 'eval.eval_utils'
 
@@ -96,13 +96,6 @@ local function lossFun()
     if cnn_grad_params then cnn_grad_params:add(opt.weight_decay, cnn_params) end
   end
 
-  if opt.dump_all_losses == 1 then
-    for k, v in pairs(losses) do
-      all_losses[k] = all_losses[k] or {}
-      all_losses[k][iter] = v
-    end
-  end
-  
   --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   -- Visualization/Logging code
   --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
