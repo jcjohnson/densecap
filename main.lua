@@ -81,7 +81,7 @@ local function lossFun()
   model.timing = opt.timing
   model.cnn_backward = false
   if opt.finetune_cnn_after ~= -1 and iter > opt.finetune_cnn_after then
-    model.cnn_backward = true
+    model.finetune_cnn = true
   end
   model.dump_vars = false
   if opt.progress_dump_every > 0 and iter % opt.progress_dump_every == 0 then
