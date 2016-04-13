@@ -217,7 +217,7 @@ end
 function layer:setTestArgs(args)
   args = args or {}
   self.test_clip_boxes = utils.getopt(args, 'clip_boxes', true)
-  self.test_nms_thresh = utils.getopt(args, 'nms_thresh', 0.3)
+  self.test_nms_thresh = utils.getopt(args, 'nms_thresh', 0.7)
   self.test_max_proposals = utils.getopt(args, 'max_proposals', 300)
 end
 
@@ -238,7 +238,7 @@ function layer:_forward_test(input)
     nms_thresh = self.test_nms_thresh,
     max_proposals = self.test_max_proposals
   }
-  
+
   -- Make sure that setImageSize has been called
   assert(self.image_height and self.image_width and not self._called_forward_size,
          'Must call setImageSize before each forward pass')
@@ -313,18 +313,6 @@ function layer:_forward_test(input)
   local rpn_trans_nms = rpn_trans:index(2, idx)[1]
   local rpn_scores_nms = rpn_scores:index(2, idx)[1]
   local scores_nms = scores:index(1, idx)
-
-  -- Maybe pick only the top proposals
-  --[[
-  if arg.max_proposals > 0 then
-    if rpn_boxes_nms:size(1) > arg.max_proposals then
-      rpn_boxes_nms = rpn_boxes_nms[{{1, arg.max_proposals}}]
-      rpn_anchors_nms = rpn_anchors_nms[{{1, arg.max_proposals}}]
-      rpn_trans_nms = rpn_trans_nms[{{1, arg.max_proposals}}]
-      rpn_scores_nms = rpn_scores_nms[{{1, arg.max_proposals}}]
-    end
-  end
-  --]]
 
   -- Use roi pooling to get features for boxes
   local roi_features

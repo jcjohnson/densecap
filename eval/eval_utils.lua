@@ -223,7 +223,7 @@ end
 function DenseCaptioningEvaluator:evaluate(verbose)
   if verbose == nil then verbose = true end
   local min_overlaps = {0.3, 0.4, 0.5, 0.6, 0.7}
-  local min_scores = {-1, 0.05, 0.1, 0.15, 0.2, 0.25}
+  local min_scores = {-1, 0, 0.05, 0.1, 0.15, 0.2, 0.25}
 
   -- concatenate everything across all images
   local logprobs = torch.cat(self.all_logprobs, 1) -- concat all logprobs

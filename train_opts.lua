@@ -72,6 +72,14 @@ function M.parse(arg)
   cmd:option('-checkpoint_path', 'checkpoint.t7',
     'Name of the checkpoint file to use')
 
+  -- Test-time model options (for evaluation)
+  cmd:option('-test_rpn_nms_thresh', 0.7,
+    'Test-time NMS threshold to use in the RPN')
+  cmd:option('-test_final_nms_thresh', 0.3,
+    'Test-time NMS threshold to use for final outputs')
+  cmd:option('-test_num_proposals', 300,
+    'Number of region proposal to use at test-time')
+
   -- Visualization
   cmd:option('-progress_dump_every', 100,
     'Every how many iterations do we write a progress report to vis/out ?. 0 = disable.')

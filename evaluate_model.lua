@@ -18,6 +18,9 @@ cmd:option('-gpu', 0, 'The GPU to use; set to -1 for CPU')
 cmd:option('-use_cudnn', 1, 'Whether to use cuDNN backend in GPU mode.')
 cmd:option('-split', 'val', 'Which split to evaluate; either val or test.')
 cmd:option('-max_images', -1, 'How many images to evaluate; -1 for whole split')
+cmd:option('-rpn_nms_thresh', 0.7)
+cmd:option('-final_nms_thresh', 0.3)
+cmd:option('-num_proposals', 300)
 local opt = cmd:parse(arg)
 
 
@@ -47,6 +50,13 @@ if use_cudnn then
   cudnn.convert(model.net, cudnn)
   cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)
 end
+
+-- Set the test-time parameters for the model
+model.nets.localization_layer:setTestArgs{
+  nms_thresh=opt.rpn_nms_thresh,
+  max_proposals=opt.num_proposals,
+}
+model.opt.final_nms_thresh = opt.final_nms_thresh
 
 -- Set up the DataLoader; use HDF5 and JSON files from checkpoint if they were
 -- not explicitly provided.

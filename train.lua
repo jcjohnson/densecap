@@ -136,7 +136,14 @@ while true do
 
   if ((opt.eval_first_iteration == 1 or iter > 0) and iter % opt.save_checkpoint_every == 0) or (iter+1 == opt.max_iters) then
 
-    -- evaluate validation performance
+    -- Set test-time options for the model
+    model.nets.localization_layer:setTestArgs{
+      nms_thresh=opt.test_rpn_nms_thresh,
+      max_proposals=opt.test_num_proposals,
+    }
+    model.opt.final_nms_thresh = opt.test_final_nms_thresh
+
+    -- Evaluate validation performance
     local eval_kwargs = {
       model=model,
       loader=loader,
