@@ -35,15 +35,18 @@ cmd:option('-image_size', 720)
 -- input settings
 cmd:option('-input_image', '', 'A path to a single specific image to caption')
 cmd:option('-input_dir', '', 'A path to a directory with images to caption')
-cmd:option('-input_split', '', 'An MSCOCO split identifier to process (train|val|test)')
+cmd:option('-input_split', '', 'A VisualGenome split identifier to process (train|val|test)')
+    -- these settings are only used if input_split is not empty
+    cmd:option('-splits_json', 'info/densecap_splits.json')
+    cmd:option('-vg_img_root_dir', '', 'root directory for vg images')
 -- output settings
 cmd:option('-max_images', 100, 'max number of images to process')
 cmd:option('-output_dir', '')
-  -- these settings are only used if output_dir is not empty
-  cmd:option('-num_to_draw', 10, 'max number of predictions per image')
-  cmd:option('-text_size', 1, '1 looks best I think')
-  cmd:option('-box_width', 2, 'width of rendered box')
-cmd:option('-output_vis', 1)
+    -- these settings are only used if output_dir is not empty
+    cmd:option('-num_to_draw', 10, 'max number of predictions per image')
+    cmd:option('-text_size', 1, '1 looks best I think')
+    cmd:option('-box_width', 2, 'width of rendered box')
+cmd:option('-output_vis', 1, 'if 1 then writes files needed for pretty vis into vis/ ')
 -- misc
 cmd:option('-gpu', 0)
 cmd:option('-use_cudnn', 1)
@@ -124,6 +127,16 @@ function get_input_images(opt)
         table.insert(image_paths, img_in_path)
       end
     end
+  elseif opt.input_split ~= '' then
+    -- load json information that contains the splits information for VG
+    local info = utils.read_json(opt.splits_json)
+    local split_img_ids = info[opt.input_split] -- is a table of integer ids
+    for k=1,#split_img_ids do
+      local img_in_path = paths.concat(opt.vg_img_root_dir, tostring(split_img_ids[k]) .. '.jpg')
+      table.insert(image_paths, img_in_path)
+    end
+  else
+    error('one of input_image, input_dir, or input_split must be provided.')
   end
   return image_paths
 end
