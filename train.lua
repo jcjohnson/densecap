@@ -61,7 +61,7 @@ local results_history = {}
 local iter = 0
 local function lossFun()
   grad_params:zero()
-  if opt.finetune_cnn_after ~= -1 and iter > opt.finetune_cnn_after then
+  if opt.finetune_cnn_after ~= -1 and iter >= opt.finetune_cnn_after then
     cnn_grad_params:zero() 
   end
   model:training()
@@ -88,7 +88,6 @@ local function lossFun()
     model.dump_vars = true
   end
   local losses, stats = model:forward_backward(data)
-  -- stats.times['getBatch'] = getBatch_time -- this is gross but ah well
 
   -- Apply L2 regularization
   if opt.weight_decay > 0 then

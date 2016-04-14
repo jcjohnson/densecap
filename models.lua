@@ -19,6 +19,11 @@ function M.setup(opt)
     model.opt.sampler_low_thresh = opt.iou_low_thresh
     model.opt.train_remove_outbounds_boxes = opt.train_remove_outbounds_boxes
     model.opt.captioning_weight = opt.captioning_weight
+
+    if cudnn then
+      cudnn.convert(model.net, cudnn)
+      cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)
+    end
   end
 
   -- Find all Dropout layers and set their probabilities
