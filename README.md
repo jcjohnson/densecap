@@ -61,3 +61,38 @@ the [cuDNN bindings for Torch](https://github.com/soumith/cudnn.torch) by runnin
 ```bash
 luarocks install cudnn
 ```
+
+### (Optional) Training
+
+There are some additional dependencies if you want to train your own model:
+
+- Python 2.7
+- Java JDK 1.5 or higher
+
+You'll also need the development header files for Python 2.7 and for HDF5; you can install these
+on Ubuntu by running
+
+```bash
+sudo apt-get -y install python2.7-dev
+sudo apt-get install libhdf5-dev
+```
+
+You'll need the following Python libraries:
+- numpy
+- scipy
+- Pillow
+- h5py
+
+You will also need DeepMind's [HDF5 bindings for Torch](https://github.com/deepmind/torch-hdf5) which you can install by running
+
+```bash
+luarocks install https://raw.githubusercontent.com/deepmind/torch-hdf5/master/hdf5-0-0.rockspec
+```
+
+You will need to download the pretrained VGG-16 model and the [METEOR](http://www.cs.cmu.edu/~alavie/METEOR/README.html)
+evaluation code; you can do this by running the following scripts from the root directory:
+
+```bash
+sh scripts/download_models.sh
+sh scripts/setup_eval.sh
+```
