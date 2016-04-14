@@ -8,6 +8,9 @@ The paper addresses the problem of **dense captioning**, where a computer detect
 
 <img src='imgs/resultsfig.png'>
 
+The model is trained using the [Visual Genome](https://visualgenome.org/) dataset, and the model is a deep convolutional neural network
+that is trained in an end-to-end fashion.
+
 With this repository you can:
 
 - Run our pretrained DenseCap model on new images, on GPU or CPU
