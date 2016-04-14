@@ -2,7 +2,7 @@
 
 This is the code for the paper
 
-*[DenseCap: Fully Convolutional Localization Networks for Dense Captioning](http://cs.stanford.edu/people/jcjohns/papers/densecap/JohnsonCVPR2016.pdf)*, [Justin Johnson](http://cs.stanford.edu/people/jcjohns/)\*, [Andrej Karpathy](http://cs.stanford.edu/people/karpathy/)\*, [Li Fei-Fei](http://vision.stanford.edu/feifeili/), CVPR 2016 (\* indicates equal contribution)
+*[DenseCap: Fully Convolutional Localization Networks for Dense Captioning](http://cs.stanford.edu/people/jcjohns/papers/densecap/JohnsonCVPR2016.pdf)*, [Justin Johnson](http://cs.stanford.edu/people/jcjohns/)\*, [Andrej Karpathy](http://cs.stanford.edu/people/karpathy/)\*, [Li Fei-Fei](http://vision.stanford.edu/feifeili/), [CVPR 2016](http://cvpr2016.thecvf.com/) (\* indicates equal contribution)
 
 The paper addresses the problem of **dense captioning**, where a computer detects objects in images and describes them in natural language. Here are a few example outputs:
 
@@ -39,13 +39,9 @@ luarocks install https://raw.githubusercontent.com/jcjohnson/torch-rnn/master/to
 
 ### (Optional) GPU acceleration
 
-If have an NVIDIA GPU and want to accelerate the model with CUDA, you'll also need the following packages:
-
-- [torch/cutorch](https://github.com/torch/cutorch)
-- [torch/cunn](https://github.com/torch/cunn)
-- [cudnn.torch](https://github.com/soumith/cudnn.torch)
-
-You can install / update these by running:
+If have an NVIDIA GPU and want to accelerate the model with CUDA, you'll also need to install
+[torch/cutorch](https://github.com/torch/cutorch) and [torch/cunn](https://github.com/torch/cunn);
+you can install / update these by running:
 
 ```bash
 luarocks install cutorch
