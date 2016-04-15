@@ -93,6 +93,13 @@ function run_image(model, img_path, opt, dtype)
   return out
 end
 
+function result_to_json(result)
+  local out = {}
+  out.boxes = result.boxes:float():floor():totable()
+  out.scores = result.scores:float():view(-1):totable()
+  out.captions = result.captions
+  return out
+end
 
 function lua_render_result(result, opt)
   -- use lua utilities to render results onto the image (without going)
@@ -153,17 +160,33 @@ model:evaluate()
 -- get paths to all images we should be evaluating
 local image_paths = get_input_images(opt)
 local num_process = math.min(#image_paths, opt.max_images)
+local results_json = {}
 for k=1,num_process do
   local img_path = image_paths[k]
   print(string.format('%d/%d processing image %s', k, num_process, img_path))
   -- run the model on the image and obtain results
   local result = run_image(model, img_path, opt, dtype)  
-
+  -- handle output serialization: either to directory or for pretty html vis
   if opt.output_dir ~= '' then
     local img_out = lua_render_result(result, opt)
     local img_out_path = paths.concat(opt.output_dir, paths.basename(img_path))
     image.save(img_out_path, img_out)
   end
-
+  if opt.output_vis == 1 then
+    -- save the raw image to vis/data/
+    local img_out_path = paths.concat('vis', 'data', paths.basename(img_path))
+    image.save(img_out_path, result.img)
+    -- keep track of the (thin) json information with all result metadata
+    local result_json = result_to_json(result)
+    result_json.img_path = 'data/' .. paths.basename(img_path)
+    table.insert(results_json, result_json)
+  end
 end
 
+if #results_json > 0 then
+  -- serialize to json
+  local out = {}
+  out.results = results_json
+  out.opt = opt
+  utils.write_json(paths.concat('vis', 'data', 'results.json'), out)
+end
