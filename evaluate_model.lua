@@ -4,6 +4,7 @@ require 'nn'
 require 'densecap.DataLoader'
 require 'densecap.DenseCapModel'
 
+local utils = require 'densecap.utils'
 local eval_utils = require 'eval.eval_utils'
 
 --[[
@@ -29,34 +30,15 @@ local checkpoint = torch.load(opt.checkpoint)
 local model = checkpoint.model
 print 'Loaded model'
 
--- Figure out CPU / GPU and cudnn
-local dtype = 'torch.FloatTensor'
-local use_cudnn = false
-if opt.gpu >= 0 then
-  require 'cutorch'
-  require 'cunn'
-  if opt.use_cudnn == 1 then
-    require 'cudnn'
-    use_cudnn = true
-  end
-  dtype = 'torch.CudaTensor'
-  cutorch.setDevice(opt.gpu + 1)
-end
+local dtype, use_cudnn = utils.setup_gpus(opt.gpu, opt.use_cudnn)
 print(string.format('Using dtype "%s"', dtype))
 
--- Cast the model to the right dtype and convert convolutions from nn to cudnn
-model:type(dtype)
-if use_cudnn then
-  cudnn.convert(model.net, cudnn)
-  cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)
-end
-
--- Set the test-time parameters for the model
-model.nets.localization_layer:setTestArgs{
-  nms_thresh=opt.rpn_nms_thresh,
+model:convert(dtype, use_cudnn)
+model:setTestArgs{
+  rpn_nms_thresh=opt.rpn_nms_thresh,
+  final_nms_thresh=opt.final_nms_thresh,
   max_proposals=opt.num_proposals,
 }
-model.opt.final_nms_thresh = opt.final_nms_thresh
 
 -- Set up the DataLoader; use HDF5 and JSON files from checkpoint if they were
 -- not explicitly provided.

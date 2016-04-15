@@ -291,6 +291,13 @@ function layer:_forward_test(input)
   local neg_exp = rpn_scores_exp[{1, {}, 2}]
   local scores = (pos_exp + neg_exp):pow(-1):cmul(pos_exp)
   
+  local verbose = false
+  if verbose then
+    print('in LocalizationLayer forward_test')
+    print(string.format('Before NMS there are %d boxes', num_boxes))
+    print(string.format('Using NMS threshold %f', arg.nms_thresh))
+  end
+
   -- Run NMS and sort by objectness score
   local boxes_scores = scores.new(num_boxes, 5)
   boxes_scores[{{}, {1, 4}}] = rpn_boxes_x1y1x2y2
@@ -313,6 +320,10 @@ function layer:_forward_test(input)
   local rpn_trans_nms = rpn_trans:index(2, idx)[1]
   local rpn_scores_nms = rpn_scores:index(2, idx)[1]
   local scores_nms = scores:index(1, idx)
+
+  if verbose then
+    print(string.format('After NMS there are %d boxes', rpn_boxes_nms:size(1)))
+  end
 
   -- Use roi pooling to get features for boxes
   local roi_features

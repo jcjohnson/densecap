@@ -27,7 +27,7 @@ function eval_utils.eval_split(kwargs)
   local id = utils.getopt(kwargs, 'id', '')
   local dtype = utils.getopt(kwargs, 'dtype', 'torch.FloatTensor')
   assert(split == 'val' or split == 'test', 'split must be "val" or "test"')
-  local split_to_int = {val=2, test=3}
+  local split_to_int = {val=1, test=2}
   split = split_to_int[split]
   print('using split ', split)
   

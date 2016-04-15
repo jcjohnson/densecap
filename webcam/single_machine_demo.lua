@@ -22,7 +22,7 @@ cmd:option('-checkpoint', 'data/fullcap3-475-1446663988.t7')
 cmd:option('-display_image_height', 480)
 cmd:option('-display_image_width', 640)
 cmd:option('-model_image_size', 480)
-cmd:option('-proposals_per_image', 50)
+cmd:option('-num_proposals', 50)
 cmd:option('-boxes_to_show', 10)
 cmd:option('-webcam_fps', 60)
 cmd:option('-gpu', 0)
@@ -72,12 +72,6 @@ local function run_model(opt, info, model, img_caffe)
     cutorch.synchronize()
     model.timing = opt.detailed_timing
   end
-  -- Set test-time parameters for the model
-  model.nets.localization_layer:setTestArgs{
-    nms_thresh=opt.rpn_nms_thresh,
-    max_proposals=opt.proposals_per_image,
-  }
-  model.opt.final_nms_thresh = opt.final_nms_thresh
   local boxes_xcycwh, scores, captions = model:forward_test(img_caffe:cuda())
   if opt.timing == 1 then
     cutorch.synchronize()
@@ -178,7 +172,7 @@ end
 
 local function main()
   local opt = cmd:parse(arg)
-  cutorch.setDevice(opt.gpu + 1)
+  local dtype, use_cudnn = utils.setup_gpus(opt.gpu, opt.use_cudnn)
 
   -- Load the checkpoint
   print('loading checkpoint from ' .. opt.checkpoint)
@@ -187,11 +181,12 @@ local function main()
   print('done loading checkpoint')
 
   -- Ship checkpoint to GPU and convert to cuDNN
-  model:cuda()
-  if opt.use_cudnn == 1 then
-    cudnn.convert(model.net, cudnn)
-    cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)
-  end
+  model:convert(dtype, use_cudnn)
+  model:setTestArgs{
+    rpn_nms_thresh = opt.rpn_nms_thresh,
+    final_nms_thresh = opt.final_nms_thresh,
+    num_proposals = opt.num_proposals,
+  }
   model:evaluate()
 
   local win = nil

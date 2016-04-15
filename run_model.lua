@@ -32,6 +32,9 @@ TODO:
 local cmd = torch.CmdLine()
 cmd:option('-checkpoint', 'data/checkpoint.t7')
 cmd:option('-image_size', 720)
+cmd:option('-rpn_nms_thresh', 0.7)
+cmd:option('-final_nms_thresh', 0.3)
+cmd:option('-num_proposals', 1000)
 -- input settings
 cmd:option('-input_image', '', 'A path to a single specific image to caption')
 cmd:option('-input_dir', '', 'A path to a directory with images to caption')
@@ -51,21 +54,6 @@ cmd:option('-output_vis', 1, 'if 1 then writes files needed for pretty vis into 
 cmd:option('-gpu', 0)
 cmd:option('-use_cudnn', 1)
 local opt = cmd:parse(arg)
-print(opt)
-
--- Figure out datatypes
-local dtype = 'torch.FloatTensor'
-local use_cudnn = false
-if opt.gpu >= 0 then
-  require 'cutorch'
-  require 'cunn'
-  cutorch.setDevice(opt.gpu + 1)
-  dtype = 'torch.CudaTensor'
-  if opt.use_cudnn == 1 then
-    require 'cudnn'
-    use_cudnn = true
-  end
-end
 
 
 function run_image(model, img_path, opt, dtype)
@@ -149,12 +137,15 @@ function get_input_images(opt)
 end
 
 -- Load the model, and cast to the right type
+local dtype, use_cudnn = utils.setup_gpus(opt.gpu, opt.use_cudnn)
 local checkpoint = torch.load(opt.checkpoint)
 local model = checkpoint.model
-model:type(dtype)
-if use_cudnn then 
-  cudnn.convert(model.net, cudnn)
-end
+model:convert(dtype, use_cudnn)
+model:setTestArgs{
+  rpn_nms_thresh = opt.rpn_nms_thresh,
+  final_nms_thresh = opt.final_nms_thresh,
+  num_proposals = opt.num_proposals,
+}
 model:evaluate()
 
 -- get paths to all images we should be evaluating
