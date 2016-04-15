@@ -19,7 +19,6 @@ local vis_utils = require 'densecap.vis_utils'
 
 local cmd = torch.CmdLine()
 cmd:option('-checkpoint', 'data/fullcap3-475-1446663988.t7')
-cmd:option('-train_data_json', 'data/vg-regions-720-dicts.json')
 cmd:option('-display_image_height', 480)
 cmd:option('-display_image_width', 640)
 cmd:option('-model_image_size', 480)
@@ -180,9 +179,6 @@ end
 local function main()
   local opt = cmd:parse(arg)
   cutorch.setDevice(opt.gpu + 1)
-
-  local info = utils.read_json(opt.train_data_json)
-  info.vocab_size = utils.count_keys(info.idx_to_token)
 
   -- Load the checkpoint
   print('loading checkpoint from ' .. opt.checkpoint)
