@@ -67,6 +67,11 @@ function layer:__init(height, width)
 end
 
 
+function layer:clearState()
+  self.net:clearState()
+end
+
+
 function layer:setImageSize(image_height, image_width)
   self.image_height = image_height
   self.image_width = image_width

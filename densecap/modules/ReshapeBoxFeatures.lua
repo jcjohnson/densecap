@@ -13,6 +13,14 @@ function layer:__init(k)
 end
 
 
+function layer:clearState()
+  self.input_perm:set()
+  self.gradInput_perm:set()
+  self.output:set()
+  self.gradInput:set()
+end
+
+
 function layer:updateOutput(input)
   local N, H, W = input:size(1), input:size(3), input:size(4)
   local D = input:size(2) / self.k

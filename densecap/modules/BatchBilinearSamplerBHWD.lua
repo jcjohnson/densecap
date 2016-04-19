@@ -65,6 +65,15 @@ function layer:__init()
   self.gradInputImageView = torch.Tensor()
 end
 
+
+function layer:clearState()
+  self.gradInput = {}
+  self.output:set()
+  self.inputImageView:set()
+  self.gradInputImageView:set()
+end
+
+
 function layer:check(input, gradOutput)
   local inputImages = input[1]
   local grids = input[2]
