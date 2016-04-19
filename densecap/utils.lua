@@ -2,6 +2,40 @@ local cjson = require 'cjson'
 
 local utils = {}
 
+
+--[[
+Utility function to set up GPU imports and pick datatype based on commmand line
+arguments.
+
+Inputs:
+- gpu: Index of GPU requested on the command line; zero-indexed. gpu < 0 means
+  CPU-only mode. If gpu >= 0 then we will import cutorch and cunn and set the
+  current device using cutorch.
+- use_cudnn: Whether cuDNN was requested on the command line; either 0 or 1.
+  We will import cudnn if gpu >= 0 and use_cudnn == 1.
+
+Returns:
+- dtype: torch datatype that should be used based on the arguments
+- actual_use_cudnn: Whether cuDNN should actually be used; this is equal to
+  gpu >= 0 and use_cudnn == 1.
+--]]
+function utils.setup_gpus(gpu, use_cudnn)
+  local dtype = 'torch.FloatTensor'
+  local actual_use_cudnn = false
+  if gpu >= 0 then
+    require 'cutorch'
+    require 'cunn'
+    cutorch.setDevice(gpu + 1)
+    dtype = 'torch.CudaTensor'
+    if use_cudnn == 1 then
+      require 'cudnn'
+      actual_use_cudnn = true
+    end
+  end
+  return dtype, actual_use_cudnn
+end
+
+
 --[[
 get a table of string->float of losses and put them all together 
 into a printable human readable string.

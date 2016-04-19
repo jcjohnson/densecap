@@ -12,6 +12,8 @@ from scipy.misc import imread, imresize
 
 
 """
+TODO: update this data format to be actually correct!
+
 Input JSON describing regions of images and convert to an HDF5 file.
 
 The input text file lists a bunch of json blobs one per line, which 

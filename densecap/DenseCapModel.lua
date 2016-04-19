@@ -175,6 +175,40 @@ end
 
 
 --[[
+Set test-time parameters for this DenseCapModel.
+
+Input: Table with the following keys:
+- rpn_nms_thresh: NMS threshold for region proposals in the RPN; default is 0.7.
+- final_nms_thresh: NMS threshold for final predictions; default is 0.3.
+- num_proposals: Number of proposals to use; default is 1000
+--]]
+function DenseCapModel:setTestArgs(kwargs)
+  self.nets.localization_layer:setTestArgs{
+    nms_thresh = utils.getopt(kwargs, 'rpn_nms_thresh', 0.7),
+    max_proposals = utils.getopt(kwargs, 'num_proposals', 1000)
+  }
+  self.opt.final_nms_thresh = utils.getopt(kwargs, 'final_nms_thresh', 0.3)
+end
+
+
+--[[
+Convert this DenseCapModel to a particular datatype, and convert convolutions
+between cudnn and nn.
+--]]
+function DenseCapModel:convert(dtype, use_cudnn)
+  self:type(dtype)
+  if cudnn and use_cudnn ~= nil then
+    local backend = nn
+    if use_cudnn then
+      backend = cudnn
+    end
+    cudnn.convert(self.net, backend)
+    cudnn.convert(self.nets.localization_layer.nets.rpn, backend)
+  end
+end
+
+
+--[[
 Run the model forward.
 
 Input:
@@ -219,9 +253,17 @@ function DenseCapModel:updateOutput(input)
   self.output = self.net:forward(input)
 
   -- At test-time, apply NMS to final boxes
+  local verbose = false
+  if verbose then
+    print(string.format('before final NMS there are %d boxes', self.output[4]:size(1)))
+    print(string.format('Using NMS threshold of %f', self.opt.final_nms_thresh))
+  end
   if not self.train and self.opt.final_nms_thresh > 0 then
+    -- We need to apply the same NMS mask to the final boxes, their
+    -- objectness scores, and the output from the language model
     local final_boxes_float = self.output[4]:float()
     local class_scores_float = self.output[1]:float()
+    local lm_output_float = self.output[5]:float()
     local boxes_scores = torch.FloatTensor(final_boxes_float:size(1), 5)
     local boxes_x1y1x2y2 = box_utils.xcycwh_to_x1y1x2y2(final_boxes_float)
     boxes_scores[{{}, {1, 4}}]:copy(boxes_x1y1x2y2)
@@ -229,10 +271,12 @@ function DenseCapModel:updateOutput(input)
     local idx = box_utils.nms(boxes_scores, self.opt.final_nms_thresh)
     self.output[4] = final_boxes_float:index(1, idx):typeAs(self.output[4])
     self.output[1] = class_scores_float:index(1, idx):typeAs(self.output[1])
+    self.output[5] = lm_output_float:index(1, idx):typeAs(self.output[5])
 
     -- TODO: In the old StnDetectionModel we also applied NMS to the
     -- variables dumped by the LocalizationLayer. Do we want to do that?
   end
+
 
   return self.output
 end

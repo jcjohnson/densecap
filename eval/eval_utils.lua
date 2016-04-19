@@ -5,6 +5,92 @@ local box_utils = require 'densecap.box_utils'
 
 local eval_utils = {}
 
+
+--[[
+Evaluate a DenseCapModel on a split of data from a DataLoader.
+
+Input: An object with the following keys:
+- model: A DenseCapModel object to evaluate; required.
+- loader: A DataLoader object; required.
+- split: Either 'val' or 'test'; default is 'val'
+- max_images: Integer giving the number of images to use, or -1 to use the
+  entire split. Default is -1.
+- id: ID for cross-validation; default is ''.
+- dtype: torch datatype to which data should be cast before passing to the
+  model. Default is 'torch.FloatTensor'.
+--]]
+function eval_utils.eval_split(kwargs)
+  local model = utils.getopt(kwargs, 'model')
+  local loader = utils.getopt(kwargs, 'loader')
+  local split = utils.getopt(kwargs, 'split', 'val')
+  local max_images = utils.getopt(kwargs, 'max_images', -1)
+  local id = utils.getopt(kwargs, 'id', '')
+  local dtype = utils.getopt(kwargs, 'dtype', 'torch.FloatTensor')
+  assert(split == 'val' or split == 'test', 'split must be "val" or "test"')
+  local split_to_int = {val=1, test=2}
+  split = split_to_int[split]
+  print('using split ', split)
+  
+  model:evaluate()
+  loader:resetIterator(split)
+  local evaluator = DenseCaptioningEvaluator{id=id}
+
+  local counter = 0
+  local all_losses = {}
+  while true do
+    counter = counter + 1
+    
+    -- Grab a batch of data and convert it to the right dtype
+    local data = {}
+    local loader_kwargs = {split=split, iterate=true}
+    local img, gt_boxes, gt_labels, info, _ = loader:getBatch(loader_kwargs)
+    local data = {
+      image = img:type(dtype),
+      gt_boxes = gt_boxes:type(dtype),
+      gt_labels = gt_labels:type(dtype),
+    }
+    info = info[1] -- Since we are only using a single image
+
+    -- Call forward_backward to compute losses
+    model.timing = false
+    model.dump_vars = false
+    model.cnn_backward = false
+    local losses = model:forward_backward(data)
+    table.insert(all_losses, losses)
+
+    -- Call forward_test to make predictions, and pass them to evaluator
+    local boxes, logprobs, captions = model:forward_test(data.image)
+    local gt_captions = model.nets.language_model:decodeSequence(gt_labels[1])
+    evaluator:addResult(logprobs, boxes, captions, gt_boxes[1], gt_captions)
+    
+    -- Print a message to the console
+    local msg = 'Processed image %s (%d / %d) of split %d, detected %d regions'
+    local num_images = info.split_bounds[2]
+    if max_images > 0 then num_images = math.min(num_images, max_images) end
+    local num_boxes = boxes:size(1)
+    print(string.format(msg, info.filename, counter, num_images, split, num_boxes))
+
+    -- Break out if we have processed enough images
+    if max_images > 0 and counter >= max_images then break end
+    if info.split_bounds[1] == info.split_bounds[2] then break end
+  end
+
+  local loss_results = utils.dict_average(all_losses)
+  print('Loss stats:')
+  print(loss_results)
+  print('Average loss: ', loss_results.total_loss)
+  
+  local ap_results = evaluator:evaluate()
+  print(string.format('mAP: %f', 100 * ap_results.map))
+  
+  local out = {
+    loss_results=loss_results,
+    ap_results=ap_results,
+  }
+  return out
+end
+
+
 function eval_utils.score_captions(records)
   -- serialize records to json file
   utils.write_json('eval/input.json', records)
@@ -46,7 +132,6 @@ local function pluck_boxes(ix, boxes, text)
   return new_boxes, new_text
 end
 
-------------------------------------------------------------------------------
 
 local DenseCaptioningEvaluator = torch.class('DenseCaptioningEvaluator')
 function DenseCaptioningEvaluator:__init(opt)
@@ -61,7 +146,6 @@ end
 -- these can be both on CPU or on GPU (they will be shipped to CPU if not already so)
 -- predict_text is length B list of strings, target_text is length M list of strings.
 function DenseCaptioningEvaluator:addResult(logprobs, boxes, text, target_boxes, target_text)
-
   assert(logprobs:size(1) == boxes:size(1))
   assert(logprobs:size(1) == #text)
   assert(target_boxes:size(1) == #target_text)
@@ -139,7 +223,7 @@ end
 function DenseCaptioningEvaluator:evaluate(verbose)
   if verbose == nil then verbose = true end
   local min_overlaps = {0.3, 0.4, 0.5, 0.6, 0.7}
-  local min_scores = {-1, 0.05, 0.1, 0.15, 0.2, 0.25}
+  local min_scores = {-1, 0, 0.05, 0.1, 0.15, 0.2, 0.25}
 
   -- concatenate everything across all images
   local logprobs = torch.cat(self.all_logprobs, 1) -- concat all logprobs
@@ -157,7 +241,8 @@ function DenseCaptioningEvaluator:evaluate(verbose)
         local txtgt = ''
         assert(type(record.references) == "table")
         for kk,vv in pairs(record.references) do txtgt = txtgt .. vv .. '. ' end
-        print(string.format('IMG %d PRED: %s, GT: %s, OK: %d, OV: %f SCORE: %f', record.imgid, record.candidate, txtgt, record.ok, record.ov, scores[k]))
+        print(string.format('IMG %d PRED: %s, GT: %s, OK: %d, OV: %f SCORE: %f',
+              record.imgid, record.candidate, txtgt, record.ok, record.ov, scores[k]))
       end  
     end
   end
@@ -202,7 +287,7 @@ function DenseCaptioningEvaluator:evaluate(verbose)
       local apn = 0
       for t=0,1,0.01 do
         local mask = torch.ge(rec, t):double()
-        local prec_masked = torch.cmul(prec, mask)
+        local prec_masked = torch.cmul(prec:double(), mask)
         local p = torch.max(prec_masked)
         ap = ap + p
         apn = apn + 1

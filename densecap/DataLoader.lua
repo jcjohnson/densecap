@@ -7,7 +7,6 @@ local DataLoader = torch.class('DataLoader')
 function DataLoader:__init(opt)
   self.h5_file = utils.getopt(opt, 'data_h5') -- required h5file with images and other (made with prepro script)
   self.json_file = utils.getopt(opt, 'data_json') -- required json file with vocab etc. (made with prepro script)
-  self.h5_read_all = utils.getopt(opt, 'h5_read_all', false) -- read everything in memory once?
   self.debug_max_train_images = utils.getopt(opt, 'debug_max_train_images', -1)
   self.proposal_regions_h5 = utils.getopt(opt, 'proposal_regions_h5', '')
   
@@ -38,9 +37,6 @@ function DataLoader:__init(opt)
   table.insert(keys, 'original_heights')
   table.insert(keys, 'original_widths')
   table.insert(keys, 'split')
-  if self.h5_read_all then
-    table.insert(keys, 'images')
-  end
   for k,v in pairs(keys) do
     print('reading ' .. v)
     self[v] = self.h5_file:read('/' .. v):all()
@@ -62,11 +58,6 @@ function DataLoader:__init(opt)
   self.num_images = images_size[1]
   self.num_channels = images_size[2]
   self.max_image_size = images_size[3]
-
-  if self.h5_read_all then
-    print('closing h5 file, everything is in RAM')
-    self.h5_file:close() -- we can close the h5_file, we read everything in
-  end
 
   -- extract some attributes from the data
   self.num_regions = self.boxes:size(1)
@@ -178,14 +169,8 @@ function DataLoader:getBatch(opt)
   assert(ix ~= nil, 'bug: split ' .. split .. ' was accessed out of bounds with ' .. ri)
   
   -- fetch the image
-  local img
-  if self.h5_read_all then
-    img = self.images[{{ix,ix}}] -- read from RAM
-  else
-    -- otherwise do a partial read from h5 file (might be slower)
-    img = self.h5_file:read('/images'):partial({ix,ix},{1,self.num_channels},
+  local  img = self.h5_file:read('/images'):partial({ix,ix},{1,self.num_channels},
                             {1,self.max_image_size},{1,self.max_image_size})
-  end
 
   -- crop image to its original width/height, get rid of padding, and dummy first dim
   img = img[{ 1, {}, {1,self.image_heights[ix]}, {1,self.image_widths[ix]} }]

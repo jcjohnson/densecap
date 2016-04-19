@@ -91,7 +91,7 @@ function LM:decodeSequence(seq)
     local caption = ''
     for t = 1, T do
       local idx = seq[{i, t}]
-      if idx == self.END_TOKEN then break end
+      if idx == self.END_TOKEN or idx == 0 then break end
       if t > 1 then
         caption = caption .. delimiter
       end
@@ -126,7 +126,13 @@ function LM:updateOutput(input)
     return self.output
   else
     self._forward_sampled = true
-    return self:sample(image_vectors)
+    if self.beam_size ~= nil then
+      print 'running beam search'
+      self.output = self:beamsearch(image_vectors, self.beam_size)
+      return self.output
+    else
+      return self:sample(image_vectors)
+    end
   end
 end
 
@@ -155,6 +161,132 @@ function LM:getTarget(gt_sequence)
     end
   end
   return target:type(gt_sequence:type())
+end
+
+
+--[[
+image_vectors: N x D
+--]]
+function LM:beamsearch(image_vectors, beam_size)
+  beam_size = beam_size or 20
+  local N, T = image_vectors:size(1), self.seq_length
+  local seq = torch.LongTensor(N, T):zero()
+  if image_vectors:type() == 'torch.CudaTensor' then
+    seq = seq:cuda()
+  end
+  local lsm = nn.LogSoftMax():type(image_vectors:type())
+
+  -- Find all the LSTM layers in the RNN
+  local lstm_layers = {}
+  for i = 1, #self.rnn do
+    local layer = self.rnn:get(i)
+    if torch.isTypeOf(layer, nn.LSTM) then
+      table.insert(lstm_layers, layer)
+    end
+  end
+
+  -- Run each image vector separately, using the minibatch
+  -- dimension to hold beams
+  for i = 1, N do
+    -- Reset states in the RNN
+    for _, layer in ipairs(lstm_layers) do
+      layer:resetStates()
+      layer.remember_states = true
+    end
+
+    -- For the first two timesteps (image and START token) we will use
+    -- a minibatch size of 1, so tell the views to expect 1 element
+    self.view_in:resetSize(1, -1)
+    self.view_out:resetSize(1, 1, -1)
+
+    -- Encode the image vector and feed it to the RNN
+    local image_vec = image_vectors[{{i, i}}]
+    local image_vec_encoded = self.image_encoder:forward(image_vec)
+    self.rnn:forward(image_vec_encoded)
+
+    -- Feed a START token to the RNN
+    local start = torch.LongTensor(1, 1):fill(self.START_TOKEN)
+    local start_vec = self.lookup_table:forward(start)
+    local scores = self.rnn:forward(start_vec):view(1, -1)
+
+    -- Initialize our beams to the words with the highest logprobs
+    local beams = seq.new(beam_size, T):fill(1)
+    local all_logprobs = lsm:forward(scores)
+    local beam_logprobs, idx = torch.topk(all_logprobs, beam_size, 2, true)
+    beams[{{}, 1}] = idx
+
+    -- Go into each LSTM layer and duplicate the cell and hidden states for
+    -- all beams
+    for _, layer in ipairs(lstm_layers) do
+      local H = layer.cell:size(3)
+      layer.cell = layer.cell:expand(beam_size, 1, H):clone()
+      layer.c0:resize(beam_size, H):zero()
+      layer.output = layer.cell:expand(beam_size, 1, H):clone()
+      layer.h0:resize(beam_size, H):zero()
+    end
+
+    -- For subsequent timesteps we will run with a batch size of beam_size,
+    -- so reset the views so they expect it
+    self.view_in:resetSize(beam_size, -1)
+    self.view_out:resetSize(beam_size, 1, -1)
+
+    local next_beams = beams.new(beam_size * beam_size, T)
+
+    for t = 2, T do
+      local words = beams[{{}, {t - 1, t - 1}}]
+      local wordvecs = self.lookup_table:forward(words)
+      local scores = self.rnn:forward(wordvecs):view(beam_size, -1)
+      local next_word_logprobs = lsm:forward(scores)
+
+      -- If a beam already has an END token then any subsequent words should
+      -- not contribute to its logprobs, so set them to zero
+      local end_mask = torch.eq(torch.eq(beams, self.END_TOKEN):sum(2), 0)
+      end_mask = end_mask:type(next_word_logprobs:type())
+      next_word_logprobs:cmul(end_mask:expandAs(next_word_logprobs))
+      
+      -- For each beam, find the top beam_size next words
+      local top_next_word_logprobs, word_idx
+        = torch.topk(next_word_logprobs, beam_size, 2, true)
+
+      local beam_logprobs_dup = beam_logprobs:view(-1, 1)
+                                  :expand(beam_size, beam_size)
+                                  :contiguous()
+                                  :view(beam_size * beam_size)
+      local all_next_logprobs = top_next_word_logprobs:view(-1)
+                                   + beam_logprobs_dup
+      beam_logprobs, idx = torch.topk(all_next_logprobs, beam_size, 1, true)
+
+      local all_next_beams = beams:view(beam_size, 1, T)
+                               :expand(beam_size, beam_size, T)
+                               :contiguous()
+                               :view(beam_size * beam_size, T)
+      all_next_beams[{{}, t}] = word_idx:view(-1)
+      beams = all_next_beams:index(1, idx)
+
+      for _, layer in ipairs(lstm_layers) do
+        local H = layer.cell:size(3)
+        local cell_dup = layer.cell:expand(beam_size, beam_size, H)
+                                   :contiguous()
+                                   :view(beam_size * beam_size, 1, H)
+        layer.cell = cell_dup:index(1, idx)
+        local out_dup = layer.output:expand(beam_size, beam_size, H)
+                                    :contiguous()
+                                    :view(beam_size * beam_size, 1, H)
+        layer.output = out_dup:index(1, idx)
+      end
+    end
+
+    -- After running over all timesteps, copy best beam to seq
+    local _, best_beam_idx = beam_logprobs:max(1)
+    seq[i] = beams[best_beam_idx[1]]
+  end
+
+  for _, layer in ipairs(lstm_layers) do
+    layer:resetStates()
+    layer.remember_states = false
+  end
+
+  return seq
 end
 
 

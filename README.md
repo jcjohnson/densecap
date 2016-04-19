@@ -1,12 +1,21 @@
 #DenseCap
 
-Dependencies: 
+This is the code for the paper
 
-- [stnbhwd](https://github.com/qassemoquab/stnbhwd) so that you can `require 'stn'`
+*[DenseCap: Fully Convolutional Localization Networks for Dense Captioning](http://cs.stanford.edu/people/jcjohns/papers/densecap/JohnsonCVPR2016.pdf)*, [Justin Johnson](http://cs.stanford.edu/people/jcjohns/)\*, [Andrej Karpathy](http://cs.stanford.edu/people/karpathy/)\*, [Li Fei-Fei](http://vision.stanford.edu/feifeili/), [CVPR 2016](http://cvpr2016.thecvf.com/) (\* indicates equal contribution)
 
+The paper addresses the problem of **dense captioning**, where a computer detects objects in images and describes them in natural language. Here are a few example outputs:
 
-To train, example:
+<img src='imgs/resultsfig.png'>
 
-```
-$ th main.lua -data_h5 [location] -data_json [location]
-```
+The model is a deep convolutional neural network trained in an end-to-end fashion on the [Visual Genome](https://visualgenome.org/) dataset.
+
+With this repository you can:
+
+- Run our pretrained DenseCap model on new images, on GPU or CPU
+- Train a new DenseCap model on your own data
+- Run a live demo with a trained DenseCap model using a webcam
+
+## Installation
+
+You can find full [installation instructions here](doc/INSTALL.md).
