@@ -20,39 +20,42 @@ The output can be controlled with:
 - max_images: maximum number of images to process. Set to -1 to process all
 - output_dir: use this flag to identify directory to write outputs to
 - output_vis: set to 1 to output images/json to the vis directory for nice viewing in JS/HTML
-
-TODO:
-- Add options to better configure test-time behavior:
-  - Number of region proposals
-  - NMS?
-- Actually save output as JSON
 --]]
 
 
 local cmd = torch.CmdLine()
+
+-- Model options
 cmd:option('-checkpoint',
   'data/models/densecap/densecap-pretrained-vgg16.t7')
 cmd:option('-image_size', 720)
 cmd:option('-rpn_nms_thresh', 0.7)
 cmd:option('-final_nms_thresh', 0.3)
 cmd:option('-num_proposals', 1000)
--- input settings
-cmd:option('-input_image', '', 'A path to a single specific image to caption')
+
+-- Input settings
+cmd:option('-input_image', '',
+  'A path to a single specific image to caption')
 cmd:option('-input_dir', '', 'A path to a directory with images to caption')
-cmd:option('-input_split', '', 'A VisualGenome split identifier to process (train|val|test)')
-    -- these settings are only used if input_split is not empty
-    cmd:option('-splits_json', 'info/densecap_splits.json')
-    cmd:option('-vg_img_root_dir', '', 'root directory for vg images')
--- output settings
+cmd:option('-input_split', '',
+  'A VisualGenome split identifier to process (train|val|test)')
+
+-- Only used when input_split is given
+cmd:option('-splits_json', 'info/densecap_splits.json')
+cmd:option('-vg_img_root_dir', '', 'root directory for vg images')
+
+-- Output settings
 cmd:option('-max_images', 100, 'max number of images to process')
 cmd:option('-output_dir', '')
     -- these settings are only used if output_dir is not empty
     cmd:option('-num_to_draw', 10, 'max number of predictions per image')
-    cmd:option('-text_size', 1, '1 looks best I think')
+    cmd:option('-text_size', 2, '2 looks best I think')
     cmd:option('-box_width', 2, 'width of rendered box')
-cmd:option('-output_vis', 1, 'if 1 then writes files needed for pretty vis into vis/ ')
+cmd:option('-output_vis', 1,
+  'if 1 then writes files needed for pretty vis into vis/ ')
 cmd:option('-output_vis_dir', 'vis/data')
--- misc
+
+-- Misc
 cmd:option('-gpu', 0)
 cmd:option('-use_cudnn', 1)
 local opt = cmd:parse(arg)
