@@ -146,3 +146,39 @@ this demo allows you use the GPU machine as a server and the webcam machine as a
 streamed from the client to to the server, the model will run on the server, and predictions will be shipped
 back to the client for viewing. This allows you to run DenseCap on a laptop, but with network and filesystem
 overhead you will typically only achieve 1 to 2 frames per second.
+
+The server is written in Flask; on the server machine run the following to install dependencies:
+
+```bash
+cd webcam
+virtualenv .env
+pip install -r requirements.txt
+source .env/bin/activate
+cd ..
+```
+
+For technical reasons, the server needs to serve content over SSL; it expects to find SSL key
+files and certificate files in `webcam/ssl/server.key` and `webcam/ssl/server.crt` respectively.
+
+**TODO: INSTRUCTIONS FOR CREATING SSL CERTIFICATE**
+
+Run the following two commands to start the server; both will run forever:
+
+```bash
+th webcam/daemon.lua
+python webcam/server.py
+```
+
+On the client, point a web browser at the following page:
+
+```
+https://cs.stanford.edu/people/jcjohns/densecap/demo/web-client.html?server_url=SERVER_URL
+```
+
+but you should replace SERVER_URL with the actual URL of the server.
+
+**Note**: If the server is using a self-signed SSL certificate, you may need to manually
+tell your browser that the certificate is safe by pointing your client's web browser directly
+at the server URL; you will get a message that the site is unsafe, and you should click
+"proceed anyway". You should see a message that the DenseCap server is running.
+
