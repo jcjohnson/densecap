@@ -170,7 +170,7 @@ for k=1,num_process do
     image.save(img_out_path, result.img)
     -- keep track of the (thin) json information with all result metadata
     local result_json = result_to_json(result)
-    result_json.img_path = 'data/' .. paths.basename(img_path)
+    result_json.img_name = paths.basename(img_path)
     table.insert(results_json, result_json)
   end
 end
