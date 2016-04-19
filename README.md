@@ -70,3 +70,5 @@ where output images should be written:
 ```bash
 th run_model.lua -input_dir /path/to/my/image/folder -output_dir /path/to/output/folder/
 ```
+
+The script `run_model.lua` has a number of other flags; you can [find full details here](doc/run_model.md).
