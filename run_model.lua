@@ -30,7 +30,8 @@ TODO:
 
 
 local cmd = torch.CmdLine()
-cmd:option('-checkpoint', 'data/checkpoint.t7')
+cmd:option('-checkpoint',
+  'data/models/densecap/densecap-pretrained-vgg16.t7')
 cmd:option('-image_size', 720)
 cmd:option('-rpn_nms_thresh', 0.7)
 cmd:option('-final_nms_thresh', 0.3)

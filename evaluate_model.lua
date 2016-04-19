@@ -12,7 +12,9 @@ Evaluate a trained DenseCap model by running it on a split on the data.
 --]]
 
 local cmd = torch.CmdLine()
-cmd:option('-checkpoint', 'data/checkpoint.t7', 'The checkpoint to evaluate')
+cmd:option('-checkpoint',
+  'data/models/densecap/densecap-pretrained-vgg16.t7',
+  'The checkpoint to evaluate')
 cmd:option('-data_h5', '', 'The HDF5 file to load data from; optional.')
 cmd:option('-data_json', '', 'The JSON file to load data from; optional.')
 cmd:option('-gpu', 0, 'The GPU to use; set to -1 for CPU')
@@ -21,7 +23,7 @@ cmd:option('-split', 'val', 'Which split to evaluate; either val or test.')
 cmd:option('-max_images', -1, 'How many images to evaluate; -1 for whole split')
 cmd:option('-rpn_nms_thresh', 0.7)
 cmd:option('-final_nms_thresh', 0.3)
-cmd:option('-num_proposals', 300)
+cmd:option('-num_proposals', 1000)
 local opt = cmd:parse(arg)
 
 

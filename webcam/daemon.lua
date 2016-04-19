@@ -11,7 +11,8 @@ local box_utils = require 'densecap.box_utils'
 
 local cmd = torch.CmdLine()
 
-cmd:option('-checkpoint', 'data/checkpoint.t7')
+cmd:option('-checkpoint',
+  'data/models/densecap/densecap-pretrained-vgg16.t7')
 cmd:option('-max_image_size', 720)
 cmd:option('-input_dir', 'webcam/inputs')
 cmd:option('-input_ext', '.jpg')
