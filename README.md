@@ -122,7 +122,24 @@ If you have a powerful GPU, then the DenseCap model is fast enough to run in rea
 demos to allow you to run DenseCap on frames from a webcam.
 
 **Single-machine demo**: If you have a single machine with both a webcam and a powerful GPU, then you can
-use this demo to run DenseCap in real time at up to 10 frames per second.
+use this demo to run DenseCap in real time at up to 10 frames per second. This demo depends on a few extra
+Lua packages:
+
+- [clementfarabet/lua---camera](https://github.com/clementfarabet/lua---camera)
+- [torch/qtlua](https://github.com/torch/qtlua)
+
+You can install / update these dependencies by running the following:
+
+```bash
+luarocks install camera
+luarocks install qtlua
+```
+
+You can start the demo by running the following:
+
+```bash
+qlua webcam/single_machine_demo.lua
+```
 
 **Client / server demo**: If you have a machine with a powerful GPU and another machine with a webcam, then
 this demo allows you use the GPU machine as a server and the webcam machine as a client; frames will be
