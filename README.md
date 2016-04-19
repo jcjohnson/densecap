@@ -19,3 +19,13 @@ With this repository you can:
 ## Installation
 
 You can find full [installation instructions here](doc/INSTALL.md).
+
+## Pretrained model
+
+You can download a pretrained DenseCap model by running the following script:
+
+```bash
+ sh scripts/download_pretrained_model.sh
+ ```
+ 
+ This is not the exact model that was used in the paper, but is has comparable performance.
