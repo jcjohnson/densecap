@@ -84,7 +84,7 @@ end
 
 function result_to_json(result)
   local out = {}
-  out.boxes = result.boxes:float():floor():totable()
+  out.boxes = result.boxes:float():totable()
   out.scores = result.scores:float():view(-1):totable()
   out.captions = result.captions
   return out
