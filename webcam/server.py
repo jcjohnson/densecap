@@ -18,6 +18,9 @@ output_dir = 'webcam/outputs'
 
 
 class DenseCap(Resource):
+  def get(self):
+    return 'The DenseCap server seems to be running!'
+
   def post(self):
     img_id = random.randint(1, 1000000)
     img_name = os.path.join(input_dir, '%d.jpg' % img_id)
