@@ -50,6 +50,7 @@ cmd:option('-output_dir', '')
     cmd:option('-text_size', 1, '1 looks best I think')
     cmd:option('-box_width', 2, 'width of rendered box')
 cmd:option('-output_vis', 1, 'if 1 then writes files needed for pretty vis into vis/ ')
+cmd:option('-output_vis_dir', 'vis/data')
 -- misc
 cmd:option('-gpu', 0)
 cmd:option('-use_cudnn', 1)
@@ -165,7 +166,7 @@ for k=1,num_process do
   end
   if opt.output_vis == 1 then
     -- save the raw image to vis/data/
-    local img_out_path = paths.concat('vis', 'data', paths.basename(img_path))
+    local img_out_path = paths.concat(opt.output_vis_dir, paths.basename(img_path))
     image.save(img_out_path, result.img)
     -- keep track of the (thin) json information with all result metadata
     local result_json = result_to_json(result)
@@ -179,5 +180,5 @@ if #results_json > 0 then
   local out = {}
   out.results = results_json
   out.opt = opt
-  utils.write_json(paths.concat('vis', 'data', 'results.json'), out)
+  utils.write_json(paths.concat(opt.output_vis_dir, 'results.json'), out)
 end

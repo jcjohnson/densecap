@@ -39,7 +39,8 @@ class DenseCap(Resource):
       time.sleep(0.05)
     with open(json_name, 'r') as f:
       ann = json.load(f)
-      return ann
+    os.remove(json_name)
+    return ann
 
 api.add_resource(DenseCap, '/')
 
@@ -62,4 +63,3 @@ if __name__ == '__main__':
     IOLoop.instance().start()
   except KeyboardInterrupt:
     IOLoop.instance().stop()
-

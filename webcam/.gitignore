@@ -1,0 +1,4 @@
+outputs/*.json
+inputs/*.jpg
+.env/
+ssl/

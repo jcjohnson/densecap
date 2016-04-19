@@ -101,6 +101,37 @@ tests.sampleTestCuda = sampleTest('torch.CudaTensor')
 tests.sampleTestFloat = sampleTest('torch.FloatTensor')
 
 
+function beamSearchTest(dtype)
+  return function()
+    if dtype == 'torch.CudaTensor' then
+      require 'cutorch'
+      require 'cunn'
+    end
+
+    local D, W, H, V, T = 512, 64, 128, 15, 10
+    local lm = nn.LanguageModel{
+      vocab_size=V,
+      input_encoding_size=W,
+      image_vector_dim=D,
+      rnn_size=H,
+      seq_length=T,
+      idx_to_token={},
+    }
+    lm:type(dtype)
+
+    local N = 12
+    local image_vecs = torch.randn(N, D):type(dtype)
+
+    local beam_size = 7
+    local out = lm:beamsearch(image_vecs, beam_size)
+    print(out)
+  end
+end
+
+tests.beamSearchTestFloat = beamSearchTest('torch.FloatTensor')
+tests.beamSearchTestCuda = beamSearchTest('torch.CudaTensor')
+
+
 function tests.decodeSequenceTest()
   local idx_to_token = {'a', 'cat', 'dog', 'eating', 'hungry'}
   local D, W, H, V, T = 512, 64, 128, 5, 10
