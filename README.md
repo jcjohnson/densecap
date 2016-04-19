@@ -28,5 +28,8 @@ You can download a pretrained DenseCap model by running the following script:
  sh scripts/download_pretrained_model.sh
  ```
  
- This is not the exact model that was used in the paper, but is has comparable performance; using 1000 region proposals, it achieves
- a mAP of 5.70 on the test set, which is slightly better than the mAP of 5.39 that we report in the paper.
+ This will download a zipped version of the model (about 1.1 GB) to `data/models/densecap/densecap-pretrained-vgg16.t7.zip`, unpack
+ it to `data/models/densecap/densecap-pretrained-vgg16.t7` (about 1.2 GB) and then delete the zipped version.
+ 
+ This is not the exact model that was used in the paper, but is has comparable performance; using 1000 region proposals per image,
+ it achieves a mAP of 5.70 on the test set which is slightly better than the mAP of 5.39 that we report in the paper.
