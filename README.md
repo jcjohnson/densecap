@@ -14,7 +14,7 @@ We provide:
 
 - A [pretrained model](#pretrained-model)
 - Code to [run the model on new images](#running-on-new-images), on either CPU or GPU
-- Code to run a [live demo with a webcam](#webcam-demo)
+- Code to run a [live demo with a webcam](#webcam-demos)
 - Evaluation code for dense captioning
 - Instructions for training the model
 
