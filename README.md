@@ -10,15 +10,58 @@ The paper addresses the problem of **dense captioning**, where a computer detect
 
 The model is a deep convolutional neural network trained in an end-to-end fashion on the [Visual Genome](https://visualgenome.org/) dataset.
 
-With this repository you can:
+We provide:
 
-- Run our pretrained DenseCap model on new images, on GPU or CPU
-- Train a new DenseCap model on your own data
-- Run a live demo with a trained DenseCap model using a webcam
+- A [pretrained model](#pretrained-model)
+- Code to [run the model on new images](#running-on-new-images), on either CPU or GPU
+- Code to run a [live demo with a webcam](#webcam-demos)
+- Evaluation code for dense captioning
+- Instructions for training the model
 
 ## Installation
 
-You can find full [installation instructions here](doc/INSTALL.md).
+DenseCap is implemented in [Torch](http://torch.ch/), and depends on the following packages:
+
+- [torch/torch7](https://github.com/torch/torch7)
+- [torch/nn](https://github.com/torch/nn)
+- [torch/nngraph](https://github.com/torch/nngraph)
+- [torch/image](https://github.com/torch/image)
+- [lua-cjson](https://luarocks.org/modules/luarocks/lua-cjson)
+- [qassemoquab/stnbhwd](https://github.com/qassemoquab/stnbhwd)
+- [jcjohnson/torch-rnn](https://github.com/jcjohnson/torch-rnn)
+
+After installing torch, you can install / update these dependencies by running the following:
+
+```bash
+luarocks install torch
+luarocks install nn
+luarocks install image
+luarocks install lua-cjson
+luarocks install https://raw.githubusercontent.com/qassemoquab/stnbhwd/master/stnbhwd-scm-1.rockspec
+luarocks install https://raw.githubusercontent.com/jcjohnson/torch-rnn/master/torch-rnn-scm-1.rockspec
+```
+
+### (Optional) GPU acceleration
+
+If have an NVIDIA GPU and want to accelerate the model with CUDA, you'll also need to install
+[torch/cutorch](https://github.com/torch/cutorch) and [torch/cunn](https://github.com/torch/cunn);
+you can install / update these by running:
+
+```bash
+luarocks install cutorch
+luarocks install cunn
+luarocks install cudnn
+```
+
+### (Optional) cuDNN
+
+If you want to use NVIDIA's cuDNN library, you'll need to register for the CUDA Developer Program (it's free)
+and download the library from [NVIDIA's website](https://developer.nvidia.com/cudnn); you'll also need to install
+the [cuDNN bindings for Torch](https://github.com/soumith/cudnn.torch) by running
+
+```bash
+luarocks install cudnn
+```
 
 ## Pretrained model
 
@@ -79,7 +122,24 @@ If you have a powerful GPU, then the DenseCap model is fast enough to run in rea
 demos to allow you to run DenseCap on frames from a webcam.
 
 **Single-machine demo**: If you have a single machine with both a webcam and a powerful GPU, then you can
-use this demo to run DenseCap in real time at up to 10 frames per second.
+use this demo to run DenseCap in real time at up to 10 frames per second. This demo depends on a few extra
+Lua packages:
+
+- [clementfarabet/lua---camera](https://github.com/clementfarabet/lua---camera)
+- [torch/qtlua](https://github.com/torch/qtlua)
+
+You can install / update these dependencies by running the following:
+
+```bash
+luarocks install camera
+luarocks install qtlua
+```
+
+You can start the demo by running the following:
+
+```bash
+qlua webcam/single_machine_demo.lua
+```
 
 **Client / server demo**: If you have a machine with a powerful GPU and another machine with a webcam, then
 this demo allows you use the GPU machine as a server and the webcam machine as a client; frames will be
