@@ -8,8 +8,7 @@ The paper addresses the problem of **dense captioning**, where a computer detect
 
 <img src='imgs/resultsfig.png'>
 
-The model is trained using the [Visual Genome](https://visualgenome.org/) dataset, and the model is a deep convolutional neural network
-that is trained in an end-to-end fashion.
+The model is a deep convolutional neural network trained in an end-to-end fashion on the [Visual Genome](https://visualgenome.org/) dataset.
 
 With this repository you can:
 
