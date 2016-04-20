@@ -181,6 +181,8 @@ openssl rsa -in ssl/server.key -out ssl/server.key
 # Step 4: Generate self-signed certificate
 openssl x509 -req -days 365 -in ssl/server.csr -signkey ssl/server.key -out ssl/server.crt
 # Enter the password from above
+
+cd ../
 ```
 
 **TODO: INSTRUCTIONS FOR CREATING SSL CERTIFICATE**
