@@ -18,7 +18,8 @@ local box_utils = require 'densecap.box_utils'
 local vis_utils = require 'densecap.vis_utils'
 
 local cmd = torch.CmdLine()
-cmd:option('-checkpoint', 'data/fullcap3-475-1446663988.t7')
+cmd:option('-checkpoint',
+  'data/models/densecap/densecap-pretrained-vgg16.t7')
 cmd:option('-display_image_height', 480)
 cmd:option('-display_image_width', 640)
 cmd:option('-model_image_size', 480)

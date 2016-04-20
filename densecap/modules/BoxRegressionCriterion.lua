@@ -38,6 +38,15 @@ function crit:__init(w)
 end
 
 
+function crit:clearState()
+  self.invert_transform:clearState()
+  self.target_transforms = nil
+  self.gradInput[1]:set()
+  self.gradInput[2]:set()
+  self.mask = nil
+end
+
+
 function crit:updateOutput(input, target_boxes)
   local anchor_boxes, transforms = unpack(input)
   self.target_transforms = self.invert_transform:forward{anchor_boxes, target_boxes}

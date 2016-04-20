@@ -26,6 +26,13 @@ function layer:__init()
 end
 
 
+function layer:clearState()
+  self.output:set()
+  self.gradInput[1]:set()
+  self.gradInput[2]:set()
+end
+
+
 function layer:updateOutput(input)
   local anchor_boxes, target_boxes = input[1], input[2]
 

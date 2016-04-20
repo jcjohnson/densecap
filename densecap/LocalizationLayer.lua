@@ -196,7 +196,23 @@ end
 
 function layer:clearState()
   self.timer = nil
+  self.rpn_out = nil
+  self.rpn_boxes = nil
+  self.rpn_anchors = nil
+  self.rpn_trans = nil
+  self.rpn_scores = nil
+  self.pos_data = nil
+  self.pos_boxes = nil
+  self.pos_anchors = nil
+  self.pos_trans = nil
+  self.pos_target_data = nil
+  self.pos_target_boxes = nil
+  self.pos_target_labels = nil
+  self.neg_data = nil
+  self.neg_scores = nil
+  self.roi_boxes:set()
   self.nets.rpn:clearState()
+  self.nets.roi_pooling:clearState()
 end
 
 

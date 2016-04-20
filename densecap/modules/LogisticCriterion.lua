@@ -57,6 +57,18 @@ function crit:__init()
 end
 
 
+function crit:clearState()
+  self.offsets:set()
+  self.buffer:set()
+  self.log_den:set()
+  self.losses:set()
+  self.mask:set()
+  self.target_nonzero:set()
+  self.target_zero_mask:set()
+  self.gradInput:set()
+end
+
+
 function crit:updateOutput(input, target)
   --[[
   Inputs:

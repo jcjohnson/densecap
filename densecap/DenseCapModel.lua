@@ -356,6 +356,11 @@ end
 
 function DenseCapModel:clearState()
   self.net:clearState()
+  for k, v in pairs(self.crits) do
+    if v.clearState then
+      v:clearState()
+    end
+  end
 end
 
 --[[
