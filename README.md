@@ -164,30 +164,25 @@ files and certificate files in `webcam/ssl/server.key` and `webcam/ssl/server.cr
 You can generate a self-signed SSL certificate by running the following:
 
 ```bash
-cd webcam
-mkdir ssl
+mkdir webcam/ssl
 
 # Step 1: Generate a private key
-openssl genrsa -des3 -out ssl/server.key 1024
+openssl genrsa -des3 -out webcam/ssl/server.key 1024
 # Enter a password
 
 # Step 2: Generate a certificate signing request
-openssl req -new -key ssl/server.key -out ssl/server.csr
+openssl req -new -key webcam/ssl/server.key -out webcam/ssl/server.csr
 # Enter the password from above and leave all other fields blank
 
 # Step 3: Strip the password from the keyfile
-openssl rsa -in ssl/server.key -out ssl/server.key
+openssl rsa -in webcam/ssl/server.key -out webcam/ssl/server.key
 
 # Step 4: Generate self-signed certificate
-openssl x509 -req -days 365 -in ssl/server.csr -signkey ssl/server.key -out ssl/server.crt
+openssl x509 -req -days 365 -in webcam/ssl/server.csr -signkey webcam/ssl/server.key -out webcam/ssl/server.crt
 # Enter the password from above
-
-cd ../
 ```
 
-**TODO: INSTRUCTIONS FOR CREATING SSL CERTIFICATE**
-
-Run the following two commands to start the server; both will run forever:
+You can now run the following two commands to start the server; both will run forever:
 
 ```bash
 th webcam/daemon.lua
