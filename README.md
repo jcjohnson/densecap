@@ -40,15 +40,7 @@ If you find this code useful in your research, please cite:
 
 ## Installation
 
-DenseCap is implemented in [Torch](http://torch.ch/), and depends on the following packages:
-
-- [torch/torch7](https://github.com/torch/torch7)
-- [torch/nn](https://github.com/torch/nn)
-- [torch/nngraph](https://github.com/torch/nngraph)
-- [torch/image](https://github.com/torch/image)
-- [lua-cjson](https://luarocks.org/modules/luarocks/lua-cjson)
-- [qassemoquab/stnbhwd](https://github.com/qassemoquab/stnbhwd)
-- [jcjohnson/torch-rnn](https://github.com/jcjohnson/torch-rnn)
+DenseCap is implemented in [Torch](http://torch.ch/), and depends on the following packages: [torch/torch7](https://github.com/torch/torch7), [torch/nn](https://github.com/torch/nn), [torch/nngraph](https://github.com/torch/nngraph), [torch/image](https://github.com/torch/image), [lua-cjson](https://luarocks.org/modules/luarocks/lua-cjson), [qassemoquab/stnbhwd](https://github.com/qassemoquab/stnbhwd), [jcjohnson/torch-rnn](https://github.com/jcjohnson/torch-rnn)
 
 After installing torch, you can install / update these dependencies by running the following:
 
@@ -145,6 +137,8 @@ To train a new DenseCap model, you will following the following steps:
 2. Use the script `preprocess.py` to generate a single HDF5 file containing the entire dataset
 3. Use the script `train.lua` to train the model
 4. Use the script `evaluate_model.lua` to evaluate a trained model on the validation or test data
+
+For more instructions on training see [INSTALL.md](doc/INSTALL.md) in `doc` folder.
 
 
 ## Evaluation
