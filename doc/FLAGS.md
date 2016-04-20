@@ -96,7 +96,7 @@ produce images with a certain number of detections and captions baked in.
   `-output_vis_dir`: Directory to which images and JSON files (for the HTML viewer) should be written;
   default is `vis/data`.
 
-# train.lua
+## train.lua
 The script `train.lua` uses the HDF5 and JSON files produced by `preprocess.py` to train models. It assumes that the
 evaluation code has been installed by running `scripts/setup_eval.sh`, and therefore also depends on Python 2.7 and
 Java. This script periodically checks accuracy on the validation set, and saves checkpoints containing trained models.
