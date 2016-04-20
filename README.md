@@ -135,8 +135,10 @@ To train a new DenseCap model, you will following the following steps:
 
 1. Download the raw images and region descriptions from [the Visual Genome website](https://visualgenome.org/api/v0/api_home.html)
 2. Use the script `preprocess.py` to generate a single HDF5 file containing the entire dataset
-3. Use the script `train.lua` to train the model
+   [(details here)](doc/FLAGS.md#preprocesspy)
+3. Use the script `train.lua` to train the model [(details here)](doc/FLAGS.md#trainlua)
 4. Use the script `evaluate_model.lua` to evaluate a trained model on the validation or test data
+   [(details here)](doc/FLAGS.md#evaluate_modellua)
 
 For more instructions on training see [INSTALL.md](doc/INSTALL.md) in `doc` folder.
 
