@@ -12,31 +12,33 @@ from scipy.misc import imread, imresize
 
 
 """
-TODO: update this data format to be actually correct!
+This file expects a JSON file containing ground-truth regions and captions
+in the same format as the region descriptions file from the Visual Genome
+website. Concretely, this is a single large JSON file containing a list;
+each element of the list describes a single image and has the following
+format:
 
-Input JSON describing regions of images and convert to an HDF5 file.
-
-The input text file lists a bunch of json blobs one per line, which 
-contain image paths, and a list of regions in each image (both 
-coordinates and the caption). Concretely, the JSON format on each
-line is:
 {
-  "image_path": "path/to/image.png",
-  "split": "train", (train|val|test)
+  "id": [int], Unique identifier for this image,
   "regions": [
     {
-      "label": "Some sequence of words description!",
-      "x": 12,
-      "y": 15,
-      "w": 20,
-      "h": 30,
-    },...
+      "id": [int] Unique identifier for this region,
+      "image": [int] ID of the image to which this region belongs,
+      "height": [int] Height of the region in pixels,
+      "width": [int] Width of the region in pixels,
+      "phrase": [string] Caption for this region,
+      "x": [int] x-coordinate of the upper-left corner of the region,
+      "y": [int] y-coordinate of the upper-left corner of the region,
+    },
+    ...
   ]
 }
 
-The x and y coordinates are 1-indexed. w/h are width,height.
+We assume that all images are on disk in a single folder, and that
+the filename for each image is the same as its id with a .jpg extension.
+
 This file will be preprocessed into an HDF5 file and a JSON file with
-some auxiliary information. The captions will be tokenizes with some
+some auxiliary information. The captions will be tokenized with some
 basic preprocessing (split by words, remove special characters).
 
 Note, in general any indices anywhere in input/output of this file are 1-indexed.
