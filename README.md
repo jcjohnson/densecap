@@ -15,7 +15,7 @@ We provide:
 - A [pretrained model](#pretrained-model)
 - Code to [run the model on new images](#running-on-new-images), on either CPU or GPU
 - Code to run a [live demo with a webcam](#webcam-demos)
-- Evaluation code for dense captioning
+- [Evaluation code](#evaluation) for dense captioning
 - Instructions for training the model
 
 ## Installation
@@ -184,3 +184,16 @@ tell your browser that the certificate is safe by pointing your client's web bro
 at the server URL; you will get a message that the site is unsafe, and you should click
 "proceed anyway". You should see a message that the DenseCap server is running.
 
+## Evaluation
+
+In the paper we propose a metric for automatically evaluating dense captioning results.
+Our metric depends on [METEOR](http://www.cs.cmu.edu/~alavie/METEOR/README.html), and
+our evaluation code requires both Java and Python 2.7. The following script will download
+and unpack the METEOR jarfile:
+
+```bash
+sh scripts/setup_eval.sh
+```
+
+The evaluation code is **not required** to simply run a trained model on images; you can
+[find more details about the evaluation code here](eval/README.md).
