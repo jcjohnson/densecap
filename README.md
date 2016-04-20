@@ -136,6 +136,32 @@ th run_model.lua -input_dir /path/to/my/image/folder -output_dir /path/to/output
 
 The `run_model.lua` script has several other flags; you can [find details here](doc/FLAGS.md#run_modellua).
 
+
+## Training
+
+To train a new DenseCap model, you will following the following steps:
+
+1. Download the raw images and region descriptions from [the Visual Genome website](https://visualgenome.org/api/v0/api_home.html)
+2. Use the script `preprocess.py` to generate a single HDF5 file containing the entire dataset
+3. Use the script `train.lua` to train the model
+4. Use the script `evaluate_model.lua` to evaluate a trained model on the validation or test data
+
+
+## Evaluation
+
+In the paper we propose a metric for automatically evaluating dense captioning results.
+Our metric depends on [METEOR](http://www.cs.cmu.edu/~alavie/METEOR/README.html), and
+our evaluation code requires both Java and Python 2.7. The following script will download
+and unpack the METEOR jarfile:
+
+```bash
+sh scripts/setup_eval.sh
+```
+
+The evaluation code is **not required** to simply run a trained model on images; you can
+[find more details about the evaluation code here](eval/README.md).
+
+
 ## Webcam demos
 
 If you have a powerful GPU, then the DenseCap model is fast enough to run in real-time. We provide two
@@ -228,25 +254,3 @@ you will see the following:
 Afterward you should see a message telling you that the DenseCap server is running, and
 the web client should work after refreshing.
 
-## Evaluation
-
-In the paper we propose a metric for automatically evaluating dense captioning results.
-Our metric depends on [METEOR](http://www.cs.cmu.edu/~alavie/METEOR/README.html), and
-our evaluation code requires both Java and Python 2.7. The following script will download
-and unpack the METEOR jarfile:
-
-```bash
-sh scripts/setup_eval.sh
-```
-
-The evaluation code is **not required** to simply run a trained model on images; you can
-[find more details about the evaluation code here](eval/README.md).
-
-## Training
-
-To train a new DenseCap model, you will following the following steps:
-
-1. Download the raw images and region descriptions from [the Visual Genome website](https://visualgenome.org/api/v0/api_home.html)
-2. Use the script `preprocess.py` to generate a single HDF5 file containing the entire dataset
-3. Use the script `train.lua` to train the model
-4. Use the script `evaluate_model.lua` to evaluate a trained model on the validation or test data
