@@ -16,7 +16,7 @@ We provide:
 - Code to [run the model on new images](#running-on-new-images), on either CPU or GPU
 - Code to run a [live demo with a webcam](#webcam-demos)
 - [Evaluation code](#evaluation) for dense captioning
-- Instructions for training the model
+- Instructions for [training the model](#training)
 
 ## Installation
 
@@ -197,3 +197,12 @@ sh scripts/setup_eval.sh
 
 The evaluation code is **not required** to simply run a trained model on images; you can
 [find more details about the evaluation code here](eval/README.md).
+
+## Training
+
+To train a new DenseCap model, you will following the following steps:
+
+1. Download the raw images and region descriptions from [the Visual Genome website](https://visualgenome.org/api/v0/api_home.html)
+2. Use the script `preprocess.py` to generate a single HDF5 file containing the entire dataset
+3. Use the script `train.lua` to train the model
+4. Use the script `evaluate_model.lua` to evaluate a trained model on the validation or test data
