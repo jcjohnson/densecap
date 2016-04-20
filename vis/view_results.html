@@ -61,6 +61,8 @@
       var fname = data_dir + '/' + input_struct.results[current_id].img_name;
       console.log('loading image: ' + fname);
 
+      $("#counterdiv").html('image ' + (current_id+1) + '/' + input_struct.results.length);
+
       $("#image_vis").html(''); // reset area
       var div = d3.select("#image_vis").append("div").classed('dcent', true);
       
@@ -125,11 +127,17 @@
       if (e.keyCode == 83) updateCounter('detections_to_show', -1);
       if (e.keyCode == 87) updateCounter('detections_to_show', 1);
       if (e.keyCode == 84) toggleFlag('captions_inline');
+      if (e.keyCode == 82) jumpRandom();
     };
 
     // "int main" function here
     function intmain() {
       loadData();
+    }
+
+    function jumpRandom() {
+      current_id = Math.floor(Math.random()*(input_struct.results.length-1));
+      renderImage();
     }
 
     </script>
@@ -151,6 +159,12 @@
         <button onclick="toggleFlag('captions_inline')" class="bb" style="width:200px">
           Toggle show captions inline (t)
         </button>
+        <button onclick="jumpRandom()" class="bb" style="width:200px">
+          Jump to random image (r)
+        </button>
+      </div>
+      <div id="counterdiv" style="text-align:center; font-size:20px; margin-bottom:20px;">
+
       </div>
 
     </div>
