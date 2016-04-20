@@ -440,7 +440,7 @@ if __name__ == '__main__':
       default='data/visual-genome/images',
       help='Directory containing all images')
   parser.add_argument('--split_json',
-      default='data/visual-genome/densecap_splits.json',
+      default='info/densecap_splits.json',
       help='JSON file of splits')
 
   # OUTPUT settings
