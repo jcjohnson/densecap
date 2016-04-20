@@ -161,6 +161,27 @@ cd ..
 
 For technical reasons, the server needs to serve content over SSL; it expects to find SSL key
 files and certificate files in `webcam/ssl/server.key` and `webcam/ssl/server.crt` respectively.
+You can generate a self-signed SSL certificate by running the following:
+
+```bash
+cd webcam
+mkdir ssl
+
+# Step 1: Generate a private key
+openssl genrsa -des3 -out ssl/server.key 1024
+# Enter a password
+
+# Step 2: Generate a certificate signing request
+openssl req -new -key ssl/server.key -out ssl/server.csr
+# Enter the password from above and leave all other fields blank
+
+# Step 3: Strip the password from the keyfile
+openssl rsa -in ssl/server.key -out ssl/server.key
+
+# Step 4: Generate self-signed certificate
+openssl x509 -req -days 365 -in ssl/server.csr -signkey ssl/server.key -out ssl/server.crt
+# Enter the password from above
+```
 
 **TODO: INSTRUCTIONS FOR CREATING SSL CERTIFICATE**
 
