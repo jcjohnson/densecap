@@ -175,7 +175,8 @@ openssl req -new -key webcam/ssl/server.key -out webcam/ssl/server.csr
 # Enter the password from above and leave all other fields blank
 
 # Step 3: Strip the password from the keyfile
-openssl rsa -in webcam/ssl/server.key -out webcam/ssl/server.key
+cp webcam/ssl/server.key webcam/ssl/server.key.org
+openssl rsa -in webcam/ssl/server.key.org -out webcam/ssl/server.key
 
 # Step 4: Generate self-signed certificate
 openssl x509 -req -days 365 -in webcam/ssl/server.csr -signkey webcam/ssl/server.key -out webcam/ssl/server.crt
@@ -199,8 +200,12 @@ but you should replace SERVER_URL with the actual URL of the server.
 
 **Note**: If the server is using a self-signed SSL certificate, you may need to manually
 tell your browser that the certificate is safe by pointing your client's web browser directly
-at the server URL; you will get a message that the site is unsafe, and you should click
-"proceed anyway". You should see a message that the DenseCap server is running.
+at the server URL; you will get a message that the site is unsafe; for example on Chrome
+you will see the following:
+
+<img src='imgs/chrome_ssl_screen.png'>
+
+Afterward you should see a message telling you that the DenseCap server is running.
 
 ## Evaluation
 
