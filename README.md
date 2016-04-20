@@ -26,6 +26,18 @@ We provide:
 - [Evaluation code](#evaluation) for dense captioning
 - Instructions for [training the model](#training)
 
+If you find this code useful in your research, please cite:
+
+```
+@inproceedings{densecap,
+  title={DenseCap: Fully Convolutional Localization Networks for Dense Captioning},
+  author={Johnson, Justin and Karpathy, Andrej and Fei-Fei, Li},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and 
+             Pattern Recognition},
+  year={2016}
+}
+```
+
 ## Installation
 
 DenseCap is implemented in [Torch](http://torch.ch/), and depends on the following packages:
