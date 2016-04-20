@@ -96,6 +96,14 @@ produce images with a certain number of detections and captions baked in.
   `-output_vis_dir`: Directory to which images and JSON files (for the HTML viewer) should be written;
   default is `vis/data`.
 
+# train.lua
+The script `train.lua` uses the HDF5 and JSON files produced by `preprocess.py` to train models. It assumes that the
+evaluation code has been installed by running `scripts/setup_eval.sh`, and therefore also depends on Python 2.7 and
+Java. This script periodically checks accuracy on the validation set, and saves checkpoints containing trained models.
+
+In most cases the only settings you will need to change are `-learning_rate`, `-checkpoint_start_from` to start
+training from a checkpoint rather than training from scratch, `-finetune_cnn_after` to enable finetuning of the CNN,
+and `-checkpoint_path` to change the location of saved checkpoints.
 
 ## evaluate_model.lua
 The script `evaluate_model.lua` is used to quantitatively evaluate a trained model using our mean average precision metric;
