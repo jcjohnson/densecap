@@ -55,3 +55,25 @@ produce images with a certain number of detections and captions baked in.
 - `-output_vis`: If 1 (default) then output JSON files and images for the HTML viewer
   `-output_vis_dir`: Directory to which images and JSON files (for the HTML viewer) should be written;
   default is `vis/data`.
+
+
+## evaluate_model.lua
+The script `evaluate_model.lua` is used to quantitatively evaluate a trained model using our mean average precision metric;
+a model is run on images in a preprocessed dataset that has been created by `preprocess.py`.
+This script assumes that METEOR has been downloaded by running `scripts/setup_eval.sh`, and requires both Python and Java.
+
+The following flags are available:
+
+**Model options**:
+- `-checkpoint`: [See above](#common-flags)
+- `-rpn_nms_thresh`: [See above](#common-flags)
+- `-final_nms_thresh`: [See above](#common-flags)
+- `-num_proposals`: [See above](#common-flags)
+- `-gpu`: [See above](#common-flags)
+- `-use_cudnn`: [See above](#common-flags)
+
+**Other options**:
+- `-data_h5`: Path to an HDF5 file created by `preprocess.py`.
+- `-data_json`: Path to a JSON file created by `preprocess.py`.
+- `-split`: Which split to use; either `train`, `val`, or `test`.
+- `-max_images`: How many images to use for evaluation; set to -1 to use the entire split.
