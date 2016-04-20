@@ -53,7 +53,7 @@ function M.parse(arg)
     'Use this many training images (for debugging); -1 to use all images')
 
   -- Optimization
-  cmd:option('-learning_rate', 4e-6, 'learning rate to use')
+  cmd:option('-learning_rate', 1e-5, 'learning rate to use')
   cmd:option('-optim_beta1', 0.9, 'beta1 for adam')
   cmd:option('-optim_beta2', 0.999, 'beta2 for adam')
   cmd:option('-optim_epsilon', 1e-8, 'epsilon for smoothing')
