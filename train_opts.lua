@@ -63,11 +63,11 @@ function M.parse(arg)
     'Load model from a checkpoint instead of random initialization.')
   cmd:option('-finetune_cnn_after', -1,
     'Start finetuning CNN after this many iterations (-1 = never finetune)')
-  cmd:option('-val_images_use', 100,
+  cmd:option('-val_images_use', 1000,
     'Number of validation images to use for evaluation; -1 to use all')
 
   -- Model checkpointing
-  cmd:option('-save_checkpoint_every', 1000,
+  cmd:option('-save_checkpoint_every', 10000,
     'How often to save model checkpoints')
   cmd:option('-checkpoint_path', 'checkpoint.t7',
     'Name of the checkpoint file to use')
@@ -77,7 +77,7 @@ function M.parse(arg)
     'Test-time NMS threshold to use in the RPN')
   cmd:option('-test_final_nms_thresh', 0.3,
     'Test-time NMS threshold to use for final outputs')
-  cmd:option('-test_num_proposals', 300,
+  cmd:option('-test_num_proposals', 1000,
     'Number of region proposal to use at test-time')
 
   -- Visualization
