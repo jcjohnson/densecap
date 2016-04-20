@@ -114,7 +114,7 @@ where output images should be written:
 th run_model.lua -input_dir /path/to/my/image/folder -output_dir /path/to/output/folder/
 ```
 
-The script `run_model.lua` has a number of other flags; you can [find full details here](doc/run_model.md).
+The `run_model.lua` script has several other flags; you can [find details here](doc/FLAGS.md#run_modellua).
 
 ## Webcam demos
 
