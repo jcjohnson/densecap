@@ -205,7 +205,8 @@ you will see the following:
 
 <img src='imgs/chrome_ssl_screen.png'>
 
-Afterward you should see a message telling you that the DenseCap server is running.
+Afterward you should see a message telling you that the DenseCap server is running, and
+the web client should work after refreshing.
 
 ## Evaluation
 
