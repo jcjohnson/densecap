@@ -21,5 +21,5 @@ Unfortunately the METEOR code is in Java and it's not easy to communicate with t
 ### Requirements
 
 - Java. METEOR requires Java installed. On Ubuntu you can do `sudo apt-get install default-jre`. You can do `java -version` to confirm that you have it installed.
-- You'll need to download the METEOR binary `meteor-1.5.jar` and place it in `eval` folder and also `paraphrase-en.gz` and place it it in `eval/data` folder. Better instructions todo.
+- You'll need to download the METEOR binary `meteor-1.5.jar` and place it in `eval` folder and also `paraphrase-en.gz` and place it it in `eval/data` folder. You can do this automatically by running the script `scripts/setup_eval.sh` from the project's root directory.
 
