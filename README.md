@@ -95,7 +95,7 @@ To run the model on new images, use the script `run_model.lua`. To run the pretr
 use the following command:
 
 ```bash
-th run_model.lua -input_image elephant.jpg
+th run_model.lua -input_image imgs/elephant.jpg
 ```
 
 By default this will run in GPU mode; to run in CPU only mode, simply add the flag `-gpu -1`.
