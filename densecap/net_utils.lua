@@ -1,5 +1,5 @@
 require 'loadcaffe'
-require 'cutorch'
+
 
 
 local net_utils = {}
@@ -69,6 +69,7 @@ cudnn_algos['vgg-16']['GeForce GTX TITAN Z'] = {
 
 
 function net_utils.cudnn_tune_cnn(cnn_name, cnn)
+  require 'cutorch'
   local device = cutorch.getDevice()
   local device_name = cutorch.getDeviceProperties(device).name
   if cudnn_algos[cnn_name] and cudnn_algos[cnn_name][device_name] then
