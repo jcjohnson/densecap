@@ -11,7 +11,6 @@ require 'densecap.modules.LogisticCriterion'
 require 'densecap.modules.PosSlicer'
 
 local box_utils = require 'densecap.box_utils'
-local net_utils = require 'densecap.net_utils'
 local utils = require 'densecap.utils'
 
 
@@ -19,6 +18,7 @@ local DenseCapModel, parent = torch.class('DenseCapModel', 'nn.Module')
 
 
 function DenseCapModel:__init(opt)
+  local net_utils = require 'densecap.net_utils'
   opt = opt or {}  
   opt.cnn_name = utils.getopt(opt, 'cnn_name', 'vgg-16')
   opt.backend = utils.getopt(opt, 'backend', 'cudnn')
