@@ -116,7 +116,7 @@ function layer:updateOutput(input)
   self:check{self.inputImageView, grids}
   self.output:resize(B, grids:size(2), grids:size(3), C)
 
-  inputImages.nn.BilinearSamplerBHWD_updateOutput(self, self.inputImageView, grids)
+  inputImages.nn.BilinearSamplerBHWD_updateOutput(self, self.inputImageView, grids, self.output)
 
   return self.output
 end
