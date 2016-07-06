@@ -143,8 +143,8 @@ function layer:__init(opt)
   -- Used to track image size; must call setImageSize before each forward pass
   self.image_width = nil
   self.image_height = nil
-  self.called_forward = false
-  self.called_backward = false
+  self._called_forward_size = false
+  self._called_backward_size = false
 
   -- Other instance variables
   self.timer = torch.Timer()
@@ -388,7 +388,7 @@ function layer:_forward_train(input)
   self._called_forward_gt = true
 
   -- Make sure that setImageSize has been called
-  assert(self.image_height and self.image_width and not self.called_forward,
+  assert(self.image_height and self.image_width and not self._called_forward_size,
          'Must call setImageSize before each forward pass')
   self._called_forward_size = true
 
