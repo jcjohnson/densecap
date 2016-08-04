@@ -12,10 +12,10 @@ function BoxSampler:__init(options)
   self.low_thresh = utils.getopt(options, 'low_thresh', 0.3)
   self.high_thresh = utils.getopt(options, 'high_thresh', 0.7)
   self.batch_size = utils.getopt(options, 'batch_size', 256)
-  
+
   self.x_min, self.x_max = nil, nil
   self.y_min, self.y_max = nil, nil
-  
+
   self.box_iou = nn.BoxIoU()
 end
 
@@ -23,10 +23,10 @@ end
 local function unpack_dims(input_boxes, target_boxes)
   local N, B1 = input_boxes:size(1), input_boxes:size(2)
   local B2 = target_boxes:size(2)
-  
+
   assert(input_boxes:size(3) == 4 and target_boxes:size(3) == 4)
   assert(target_boxes:size(1) == N)
-  
+
   return N, B1, B2
 end
 
@@ -101,8 +101,8 @@ function BoxSampler:updateOutput(input)
   -- even if it is outside the bounds or does not meet the thresholds.
   -- This is important since things will crash if we don't have at least one
   -- positive box.
-  self.pos_mask:scatter(2, target_idx, 1)
-  self.neg_mask:scatter(2, target_idx, 0)
+  self.pos_mask:typeAs(input_max_iou):scatter(2, target_idx:typeAs(input_max_iou), 1)
+  self.neg_mask:typeAs(input_max_iou):scatter(2, target_idx:typeAs(input_max_iou), 0)
 
   assert(N == 1, "Only 1-element minibatches are supported")
   self.pos_mask = self.pos_mask:view(B1):byte()
@@ -150,7 +150,7 @@ function BoxSampler:updateOutput(input)
     utils.__GLOBAL_STATS__[k] = old_val + 1
   end
   local neg_sample_idx = torch.multinomial(neg_p, num_neg, neg_replace)
-  
+
   if self.debug_pos_sample_idx then
     pos_sample_idx = self.debug_pos_sample_idx
   end
@@ -159,9 +159,9 @@ function BoxSampler:updateOutput(input)
   end
 
   local pos_input_idx = pos_mask_nonzero:index(1, pos_sample_idx)
-  local pos_target_idx = input_idx:index(2, pos_input_idx):view(num_pos)
+  local pos_target_idx = input_idx:typeAs(pos_mask_nonzero):index(2, pos_input_idx):view(num_pos)
   local neg_input_idx = neg_mask_nonzero:index(1, neg_sample_idx)
-  
+
   self.output = {pos_input_idx, pos_target_idx, neg_input_idx}
   return self.output
 end
