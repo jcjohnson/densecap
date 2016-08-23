@@ -452,10 +452,11 @@ function DenseCapModel:forward_backward(data)
     end_box_reg_loss=end_box_reg_loss,
     captioning_loss=captioning_loss,
   }
-  losses.total_loss = 0
+  local total_loss = 0
   for k, v in pairs(losses) do
-    losses.total_loss = losses.total_loss + v
+    total_loss = total_loss + v
   end
+  losses.total_loss = total_loss
 
   -- Run the model backward
   local grad_out = {}
