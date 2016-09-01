@@ -10,7 +10,7 @@ This is the code for the paper
 <br>
 (\* equal contribution)
 <br>
-To appear in [CVPR 2016](http://cvpr2016.thecvf.com/) (oral)
+Presented at [CVPR 2016](http://cvpr2016.thecvf.com/) (oral)
 
 The paper addresses the problem of **dense captioning**, where a computer detects objects in images and describes them in natural language. Here are a few example outputs:
 
