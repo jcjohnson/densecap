@@ -35,4 +35,10 @@ $ th extract_features.lua -boxes_per_image 50 -max_images -1 -input_txt imgs_tes
                           -output_h5 ./data/im2p_test_output.h5 -gpu 0 -use_cudnn 1
 ```
 
+## Step 3
+Run the script:
+```bash
+$ python parse_json.py
+```
+In this step, we process the `paragraphs_v1.json` file for training and testing.
 
