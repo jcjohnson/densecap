@@ -40,4 +40,8 @@ Run the script:
 ```bash
 $ python parse_json.py
 ```
-In this step, we process the `paragraphs_v1.json` file for training and testing.
+In this step, we process the `paragraphs_v1.json` file for training and testing. We get the `img2paragraph` file in the **./data** directory.
+
+## Step 4
+
+
