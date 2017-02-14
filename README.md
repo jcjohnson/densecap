@@ -11,7 +11,7 @@ Running the script:
 ```bash
 $ python split_dataset
 ```
-We will get images which author used in their paper.
+We will get images from [VisualGenome dataset] which the authors used in the paper.
 
 ##Step 2
 Run the scripts:
