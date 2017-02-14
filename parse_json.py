@@ -4,7 +4,7 @@ import os
 import json
 import cPickle
 
-paragraph_json_file = open('paragraphs_v1.json').read()
+paragraph_json_file = open('./data/paragraphs_v1.json').read()
 paragraph = json.loads(paragraph_json_file)
 
 img2paragraph = {}
