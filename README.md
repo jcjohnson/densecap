@@ -44,5 +44,14 @@ In this step, we process the `paragraphs_v1.json` file for training and testing.
 ![img2paragraph](https://github.com/chenxinpeng/im2p/blob/master/img/4.png)
 
 ## Step 4
-
+Finally, we can train and test model, in the terminal:
+```bash
+$ CUDA_VISIBLE_DEVICES=0 ipython
+>>> import HRNN_paragraph_batch.py
+>>> HRNN_paragraph_batch.train()
+```
+After training, we can test the model:
+```bash
+>>> HRNN_paragraph_batch.test()
+```
 
