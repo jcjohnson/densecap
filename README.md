@@ -41,4 +41,3 @@ Run the script:
 $ python parse_json.py
 ```
 In this step, we process the `paragraphs_v1.json` file for training and testing.
-
