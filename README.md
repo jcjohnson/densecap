@@ -26,10 +26,13 @@ After this, we use `dense caption` to extract features. Deploy the running envir
 
 Run the script:
 ```bash
+$ ./download_pretrained_model.sh
 $ th extract_features.lua -boxes_per_image 50 -max_images -1 -input_txt imgs_train_path.txt \
                           -output_h5 ./data/im2p_train_output.h5 -gpu 0 -use_cudnn 1
 ```
-According to the paper, we extract **50 boxes** from each image. Also, don't forget extract val images and test images features:
+We should download the pre-trained model: `densecap-pretrained-vgg16.t7`. Then, according to the paper, we extract **50 boxes** from each image. 
+
+Also, don't forget extract val images and test images features:
 ```bash
 $ th extract_features.lua -boxes_per_image 50 -max_images -1 -input_txt imgs_val_path.txt \
                           -output_h5 ./data/im2p_val_output.h5 -gpu 0 -use_cudnn 1
