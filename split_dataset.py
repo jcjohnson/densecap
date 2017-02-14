@@ -44,3 +44,5 @@ for idx, img in enumerate(all_images):
         subprocess.call(["cp", img, val_savepath])
     elif img_name in test_names:
         subprocess.call(["cp", img, test_savepath])
+
+ 
