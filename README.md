@@ -4,7 +4,7 @@ Tensorflow implement of paper: [A Hierarchical Approach for Generating Descripti
 I haven't fine-tunning the parameters, but I achieve the metric scores:
 ![metric scores](https://github.com/chenxinpeng/im2p/blob/master/img/metric_scores.png)
 
-Please e-mail me if you have any questions and advices.
+Please send e-mail to me if you have any questions and advices, my e-mail: xinpeng_chen@whu.edu.cn.
 
 ## Step 1
 Download the [VisualGenome dataset](http://visualgenome.org/), we get the two files: VG_100K, VG_100K_2. According to the paper, we download the training, val and test splits json files. These three json files save the image names of train, validation, test data. 
