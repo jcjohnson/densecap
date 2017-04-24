@@ -196,8 +196,8 @@ The server is written in Flask; on the server machine run the following to insta
 ```bash
 cd webcam
 virtualenv .env
-pip install -r requirements.txt
 source .env/bin/activate
+pip install -r requirements.txt
 cd ..
 ```
 
