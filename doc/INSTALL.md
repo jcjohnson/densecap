@@ -77,3 +77,8 @@ evaluation code; you can do this by running the following scripts from the root 
 sh scripts/download_models.sh
 sh scripts/setup_eval.sh
 ```
+To be able to use the pretrained VGG-16 model, you will need the loadcaffe library which you can install by running
+
+```bash
+luarocks install loadcaffe
+```
