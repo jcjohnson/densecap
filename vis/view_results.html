@@ -15,6 +15,7 @@
     var INPUT_JSON_PATH = 'data/results.json'
     var input_struct = null; // will be loaded from json
     var current_id = 0; // currently shown image id
+    var show_scores = 0;
 
     // render flags utils
     var render_flags = {
@@ -28,6 +29,13 @@
     function toggleFlag(name) {
       render_flags[name] = !render_flags[name];
       renderAnnotations();
+    }
+    function toggleScores() {
+      show_scores = !show_scores;
+      renderAnnotations();
+    }
+    function sigmoid(t) {
+      return 1/(1+Math.pow(Math.E, -t));
     }
 
     function getUrlParam(name, fallback) {
@@ -111,11 +119,16 @@
         var i = ixscore[k][0];
         var det_box = result.boxes[i];
         var caption = result.captions[i];
+        var score = sigmoid(result.scores[i]);
         // render box
         var color = WAD_COLORS[k % WAD_COLORS.length];
         renderBox(elt, det_box, color, BOX_WIDTH, render_flags.captions_inline ? caption : '');
         // render caption in a separate div below the image
-        delt.append('span').classed('ddesc', true).style('color', color).html(escapeHtml(caption) + '. ');
+        if (show_scores) {
+          delt.append('span').classed('ddesc', true).style('color', color).html(escapeHtml(caption) + ' (' + score.toFixed(2) + '). ');
+        } else {
+          delt.append('span').classed('ddesc', true).style('color', color).html(escapeHtml(caption) + '. ');
+        }
       }
     }
 
@@ -127,6 +140,7 @@
       if (e.keyCode == 83) updateCounter('detections_to_show', -1);
       if (e.keyCode == 87) updateCounter('detections_to_show', 1);
       if (e.keyCode == 84) toggleFlag('captions_inline');
+      if (e.keyCode == 67) toggleScores();	  
       if (e.keyCode == 82) jumpRandom();
     };
 
@@ -158,6 +172,9 @@
         <br>
         <button onclick="toggleFlag('captions_inline')" class="bb" style="width:200px">
           Toggle show captions inline (t)
+        </button>
+        <button onclick="toggleScores()" class="bb" style="width:200px">
+          Toggle show scores (c)
         </button>
         <button onclick="jumpRandom()" class="bb" style="width:200px">
           Jump to random image (r)
