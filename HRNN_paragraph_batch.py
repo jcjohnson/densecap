@@ -286,7 +286,7 @@ class RegionPooling_HierarchicalRNN():
 
             generated_paragraph.append(generated_sent)
 
-        return feats, generated_paragraph, pred_re
+        return feats, generated_paragraph, pred_re, sent_topic_vec
 
 
 # -----------------------------------------------------------------------------------------------------
