@@ -2,7 +2,9 @@
 Tensorflow implement of paper: [A Hierarchical Approach for Generating Descriptive Image Paragraphs](http://cs.stanford.edu/people/ranjaykrishna/im2p/index.html)
 
 We donot fine-tunning the parameters, but this model can get the following scores:
-![metric scores](https://github.com/chenxinpeng/im2p/blob/master/img/metric_scores.png). Please send e-mail to me if you have any questions and advices, my e-mail: jschenxinpeng@gmail.com .
+![metric scores](https://github.com/chenxinpeng/im2p/blob/master/img/metric_scores.png). 
+
+Please send e-mail to me if you have any questions and advices, my e-mail: jschenxinpeng@gmail.com .
 
 ## Note
 This repository is not being actively maintained due to lack of time and interest. My sincerest apologies to the open source community for allowing this project to stagnate. I hope it was useful for some one of you as a jumping-off point.
