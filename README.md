@@ -1,11 +1,12 @@
 # im2p
+## Note
+This repository is not being actively maintained due to lack of time and interest. My sincerest apologies to the open source community for allowing this project to stagnate. I hope it was useful for some one of you as a jumping-off point.
+
+## Introduction
 Tensorflow implement of paper: [A Hierarchical Approach for Generating Descriptive Image Paragraphs](http://cs.stanford.edu/people/ranjaykrishna/im2p/index.html)
 
 We donot fine-tunning the parameters, but this model can get the following scores:
 ![metric scores](https://github.com/chenxinpeng/im2p/blob/master/img/metric_scores.png)
-
-## Note
-This repository is not being actively maintained due to lack of time and interest. My sincerest apologies to the open source community for allowing this project to stagnate. I hope it was useful for some one of you as a jumping-off point.
 
 ## Step 1
 Download the [VisualGenome dataset](http://visualgenome.org/), we get the two files: VG_100K, VG_100K_2. According to the paper, we download the training, val and test splits json files. These three json files save the image names of train, validation, test data. 
